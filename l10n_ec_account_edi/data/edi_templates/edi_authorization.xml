@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<odoo>
+    <template id="ec_edi_authorization">
+        <RespuestaAutorizacion>
+            <estado>AUTORIZADO</estado>
+            <numeroAutorizacion t-out="authorization_number" />
+            <fechaAutorizacion t-out="authorization_date" />
+            <ambiente t-out='environment' />
+            <comprobante t-out="xml_file" />
+        </RespuestaAutorizacion>
+    </template>
+</odoo>

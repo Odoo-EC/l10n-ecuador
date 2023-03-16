@@ -14,6 +14,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/edi_format_data.xml",
+        "data/edi_templates/edi_authorization.xml",
         "data/edi_templates/edi_info_tributaria_data.xml",
         "data/edi_templates/edi_invoice.xml",
         "data/edi_templates/edi_liquidation.xml",

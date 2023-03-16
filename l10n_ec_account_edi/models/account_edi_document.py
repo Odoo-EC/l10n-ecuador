@@ -726,3 +726,18 @@ class AccountEdiDocument(models.Model):
             ]
         )
         account_moves_with_final_consumer.write({"is_move_sent": True})
+
+    def _l10n_ec_create_file_authorized(
+        self, xml_file, authorization_number, authorization_date, environment
+    ):
+        ViewModel = self.env["ir.ui.view"].sudo()
+        xml_values = {
+            "xml_file": xml_file,
+            "authorization_number": authorization_number,
+            "authorization_date": authorization_date.strftime(DTF),
+            "environment": "PRODUCCION" if environment == "production" else "PRUEBAS",
+        }
+        xml_authorized = ViewModel._render_template(
+            "l10n_ec_account_edi.ec_edi_authorization", xml_values
+        )
+        return xml_authorized
