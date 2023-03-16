@@ -310,3 +310,20 @@ class AccountMove(models.Model):
             l10n_ec_legacy_document_authorization=self.l10n_ec_xml_access_key,
         )
         return move_vals
+
+    def l10n_ec_send_email(self):
+        compose_message = self.env["mail.compose.message"]
+        self.ensure_one()
+        res = self.action_invoice_sent()
+        context = res["context"]
+        send_mail = compose_message.with_context(**context).create({})
+        try:
+            if self.partner_id.email:
+                # With this function can attach files
+                send_mail._onchange_template_id_wrapper()
+                send_mail.action_send_mail()
+                _logger.info(f"Sent mail to: {self.partner_id.email}")
+
+            self.is_move_sent = True
+        except Exception as e:
+            _logger.warning(f"Error send mail to partner: {e}")
