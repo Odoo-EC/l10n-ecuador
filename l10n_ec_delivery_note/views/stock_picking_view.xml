@@ -34,10 +34,12 @@
                 <field
                     name="l10n_ec_delivery_note_journal_id"
                     attrs="{'invisible': [('picking_type_code','=','incoming')], 'required': [('l10n_ec_create_delivery_note', '=', True), ('picking_type_code','!=','incoming')]}"
+                    options="{'no_open':True, 'no_create': True}"
                 />
                 <field
                     name="l10n_latam_internal_type"
-                    attrs="{'invisible': [('picking_type_code','=','incoming')], 'required': [('l10n_ec_create_delivery_note', '=', True), ('picking_type_code','!=','incoming')]}"
+                    attrs="{'invisible': [('picking_type_code','=','incoming')], 'required': [('l10n_ec_create_delivery_note', '=', True), ('picking_type_code','!=','incoming')], 'readonly': [('state','in',('done','cancel'))]}"
+                    options="{'no_open':True, 'no_create': True}"
                 />
             </field>
             <xpath expr="/form/sheet/notebook/page[last()]" position="after">

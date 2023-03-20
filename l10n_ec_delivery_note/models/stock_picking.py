@@ -34,10 +34,13 @@ class StockPicking(models.Model):
         string="Emission Point",
         states=STATES,
         check_company=True,
-        # domain=[("l10n_latam_internal_type", "=", "delivery_note")],
+        domain="['&', "
+        "('l10n_latam_use_documents', '=', True), ('type', '=', 'sale')]",
     )
-    l10n_latam_internal_type = fields.Many2one("l10n_latam.document.type",
+    l10n_latam_internal_type = fields.Many2one(
+        "l10n_latam.document.type",
         string="Document Type",
+        domain="[('code', '=', '06')]",
     )
 
     @api.depends("l10n_ec_delivery_note_ids.document_number")

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from odoo import api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo.tools.translate import _
 
 STATES = {"draft": [("readonly", False)]}
@@ -30,6 +30,10 @@ class DeliveryNote(models.Model):
         readonly=True,
         states=STATES,
         check_company=True,
+        domain="['&', "
+        "('l10n_latam_use_documents', '=', True), "
+        "('active', '=', True), "
+        "('type', '=', 'sale')]",
     )
     transfer_date = fields.Date(
         required=True,
@@ -190,8 +194,10 @@ class DeliveryNote(models.Model):
         string="Is Ecuadorian Electronic Document", default=False, copy=False
     )
 
-    l10n_latam_internal_type = fields.Many2one("l10n_latam.document.type",
+    l10n_latam_internal_type = fields.Many2one(
+        "l10n_latam.document.type",
         string="Document Type",
+        domain="[('code', '=', '06')]",
     )
 
     @api.depends("journal_id")
@@ -381,16 +387,15 @@ class DeliveryNote(models.Model):
         )
     ]
 
-    # @api.model
-    # def default_get(self, fields_list):
-    #     values = super(DeliveryNote, self).default_get(fields_list)
-    #     journal_model = self.env["account.journal"]
-    #     journal = journal_model.search(
-    #         [("l10n_latam_internal_type", "=", "delivery_note")], limit=1
-    #     )
-    #     if journal:
-    #         values["journal_id"] = journal.id
-    #     return values
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super(DeliveryNote, self).default_get(fields_list)
+        document_type = self.env["l10n_latam.document.type"].search(
+            [("code", "=", "06")], limit=1
+        )
+        defaults["l10n_latam_internal_type"] = document_type.id
+
+        return defaults
 
     def unlink(self):
         for delivery_note in self:

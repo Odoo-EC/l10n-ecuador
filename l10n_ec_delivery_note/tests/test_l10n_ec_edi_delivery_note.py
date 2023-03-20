@@ -150,7 +150,8 @@ class TestL10nDeliveryNote(TestL10nDeliveryNoteCommon):
         self.assertEqual(delivery_note.state, "done")
         edi_doc = delivery_note._get_edi_document(self.edi_format)
         with self.assertLogs(
-            "odoo.addons.l10n_ec_account_edi.models.account_edi_format", level=logging.ERROR
+            "odoo.addons.l10n_ec_account_edi.models.account_edi_format",
+            level=logging.ERROR,
         ):
             delivery_note.action_process_edi_web_services()
         if not edi_doc.l10n_ec_xml_access_key or not edi_doc.l10n_ec_authorization_date:

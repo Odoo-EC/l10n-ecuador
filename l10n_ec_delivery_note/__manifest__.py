@@ -1,15 +1,14 @@
 {
     "name": "Delivery Notes",
     "summary": """Delivery Notes""",
-    "author": "Spearhead",
-    "website": "https://spearhead.global",
-    "license": "LGPL-3",
+    "author": "Odoo Community Association (OCA), Spearhead",
+    "website": "https://github.com/OCA/l10n-ecuador",
+    "license": "AGPL-3",
     "category": "Stock",
     "version": "15.0.1.0.0",
     "depends": [
-        "account",
-        "sale_stock",
-        "l10n_ec",
+        "sale_management",
+        "stock",
         "l10n_ec_account_edi",
     ],
     "data": [
