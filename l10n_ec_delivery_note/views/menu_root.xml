@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <menuitem
+        id="delivery_notes_menu"
+        name="Delivery Notes"
+        parent="stock.menu_stock_warehouse_mgmt"
+        sequence="20"
+    />
+    <menuitem
+        id="delivery_note_menu"
+        name="Delivery Note"
+        parent="delivery_notes_menu"
+        action="action_delivery_note"
+    />
+</odoo>
