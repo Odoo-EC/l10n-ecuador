@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record model="ir.ui.view" id="account_invoice_custom_view">
+        <field name="name">Facturas con retencion</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='preview_invoice']" position="before">
+                    <button
+                    name="action_create_sale_withhold_wizard"
+                    string="Agregar Rentencion"
+                    type="object"
+                    class="btn-primary"
+                    attrs="{'invisible': ['|', '|', '|',('state', '!=', 'posted'), ('payment_state', 'not in', ('not_paid', 'partial')), ('move_type', 'not in', ('out_invoice', 'out_refund','out_receipt')),('l10n_ec_withhold_active', '=', False)]}"
+                />
+            </xpath>
+            <xpath expr="//button[@name='action_view_debit_notes']" position="after">
+                <button
+                    name="action_show_l10n_ec_withholds"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-list-alt"
+                    attrs="{'invisible':[('l10n_ec_withhold_count', '=', 0)]}"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="l10n_ec_withhold_count" />
+                        </span>
+                        <span class="o_stat_text">Withholding</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='ref']" position="before">
+                <field
+                    name="partner_id"
+                    widget="res_partner_many2one"
+                    context="{'show_address': 1, 'default_is_company': True, 'show_vat': True}"
+                    options='{"always_reload": True, "no_quick_create": True}'
+                    attrs="{'invisible': [('l10n_latam_internal_type', '!=', 'withhold')]}"
+                />
+            </xpath>
+            <xpath expr="//page[@id='aml_tab']" position="before">
+                <page
+                    id="withhold_tab"
+                    string="Withhold Lines"
+                    attrs="{'invisible': [('l10n_latam_internal_type', '!=', 'withhold')]}"
+                >
+                    <field name="l10n_ec_withhold_line_ids" mode="tree,kanban">
+                        <tree editable="bottom">
+                            <field name="company_id" invisible='1' />
+                            <field
+                                name="tax_ids"
+                                string="Tax"
+                                widget="many2many_tags"
+                            />
+                            <field name="tax_base_amount" string="Monto base" />
+                            <field name="balance" string="Monto retenido" />
+                        </tree>
+                    </field>
+                    <field
+                        name="narration"
+                        placeholder="Add an internal note..."
+                        nolabel="1"
+                        height="50"
+                    />
+                </page>
+            </xpath>
+            <xpath expr="//field[@name='reversed_entry_id']" position="after">
+                <field name="l10n_latam_internal_type" invisible="1" />
+                <field name="l10n_ec_withhold_active" invisible="1" />
+            </xpath>
+        </field>
+    </record>
+</odoo>
