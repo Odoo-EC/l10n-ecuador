@@ -24,7 +24,6 @@ class TestL10nDeliveryNoteCommon(TestL10nECEdiCommon):
         cls.journal_values = {
             "name": "Journal Delivery Note",
             "company_id": cls.company.id,
-            "l10n_latam_internal_type": "delivery_note",
             "l10n_ec_emission_address_id": cls.partner_contact.id,
             "l10n_latam_use_documents": True,
             "l10n_ec_entity": "001",
@@ -44,6 +43,19 @@ class TestL10nDeliveryNoteCommon(TestL10nECEdiCommon):
         cls.picking_type.use_existing_lots = False
 
     def _l10n_ec_create_delivery_note(self):
+        with Form(self.DeliveryNote) as form:
+            form.journal_id = self.journal
+            form.partner_id = self.partner_dni
+            form.delivery_carrier_id = self.partner_carrier
+            form.motive = "Traslado de mercaderia"
+            form.rise = "1234"
+            form.dau = "1234"
+            with form.delivery_line_ids.new() as line:
+                line.product_id = self.product_a
+                line.product_qty = 1
+        return form.save()
+
+    def _l10n_ec_create_delivery_note_without_journal(self):
         with Form(self.DeliveryNote) as form:
             form.partner_id = self.partner_dni
             form.delivery_carrier_id = self.partner_carrier
