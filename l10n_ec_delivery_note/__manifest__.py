@@ -28,6 +28,6 @@
         "views/res_config_view.xml",
         "views/account_move_view.xml",
         "views/menu_root.xml",
-        # "views/account_edi_document_view.xml",
+        "views/account_edi_document_view.xml",
     ],
 }
