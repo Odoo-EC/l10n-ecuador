@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 
 from odoo.exceptions import UserError, ValidationError
-from odoo.tests import tagged
+from odoo.tests import Form, tagged
 
 from .test_l10n_ec_delivery_note_common import TestL10nDeliveryNoteCommon
 
@@ -27,68 +27,72 @@ class TestL10nDeliveryNote(TestL10nDeliveryNoteCommon):
         with self.assertRaises(UserError):
             delivery_note.action_confirm()
 
+    # def test_l10n_ec_delivery_note_date_form(self):
+    #     self.setup_edi_delivery_note()
+    #     delivery_note = self._l10n_ec_create_delivery_note()
+    #     print(f"delivery_note.delivery_date {delivery_note.delivery_date}")
+    #     delivery_note.transfer_date = delivery_note.transfer_date + timedelta(days=1)
+    #     print(f"delivery_note.transfer_date {delivery_note.transfer_date}")
+    #     with self.assertRaises(UserError):
+    #         delivery_note.action_confirm()
+
     def test_l10n_ec_delivery_note_fields_form(self):
         """Test prueba campos computados, onchange
         en formulario de guias de remisión"""
         self.setup_edi_delivery_note()
         delivery_note = self._l10n_ec_create_delivery_note()
-        # TODO not exist the validation date
-        # with self.assertRaises(UserError):
-        #     delivery_note.delivery_date = delivery_note.transfer_date - timedelta(days=1)
         with self.assertRaises(UserError):
             delivery_note.transfer_date += timedelta(days=1)
         with self.assertRaises(UserError):
             delivery_note.delivery_line_ids = False
             delivery_note.action_confirm()
-        # TODO create picking
-        # picking = self._l10n_ec_create_or_modify_picking()
-        # picking.action_confirm()
-        # picking.action_set_quantities_to_reservation()
-        # picking.button_validate()
-        # delivery_note.write(
-        #     {
-        #         "partner_id": False,
-        #         "delivery_carrier_id": False,
-        #         "delivery_address_id": False,
-        #         "journal_id": False,
-        #     }
-        # )
-        # with Form(delivery_note) as form:
-        #     form.stock_picking_ids.add(picking)
-        # delivery_note = form.save()
-        # self.assertRecordValues(
-        #     delivery_note,
-        #     [
-        #         {
-        #             "partner_id": picking.partner_id.id,
-        #             "delivery_address_id": picking.partner_id.address_get(["delivery"])[
-        #                 "delivery"
-        #             ],
-        #             "delivery_carrier_id": picking.l10n_ec_delivery_carrier_id.id,
-        #             "l10n_ec_car_plate": picking.l10n_ec_delivery_carrier_id
-        #                   .l10n_ec_car_plate,
-        #             "journal_id": picking.l10n_ec_delivery_note_journal_id.id,
-        #         }
-        #     ],
-        # )
-        # stock_move_line = picking.move_line_ids
-        # self.assertRecordValues(
-        #     delivery_note.delivery_line_ids,
-        #     [
-        #         {
-        #             "delivery_note_id": delivery_note.id,
-        #             "product_id": stock_move_line.product_id.id,
-        #             "product_qty": stock_move_line.qty_done,
-        #             "product_uom_id": stock_move_line.product_uom_id.id,
-        #             "move_id": stock_move_line.move_id.id,
-        #             "production_lot_id": stock_move_line.lot_id.id,
-        #         }
-        #     ],
-        # )
-        # # ELiminar picking relacionado
-        # with Form(delivery_note) as form:
-        #     form.stock_picking_ids.remove(picking.id)
-        #     self.assertFalse(form.delivery_line_ids)
+        picking = self._l10n_ec_create_or_modify_picking()
+        picking.action_confirm()
+        picking.action_set_quantities_to_reservation()
+        picking.button_validate()
+        delivery_note.write(
+            {
+                "partner_id": False,
+                "delivery_carrier_id": False,
+                "delivery_address_id": False,
+                "journal_id": False,
+            }
+        )
+        with Form(delivery_note) as form:
+            form.stock_picking_ids.add(picking)
+        delivery_note = form.save()
+        self.assertRecordValues(
+            delivery_note,
+            [
+                {
+                    "partner_id": picking.partner_id.id,
+                    "delivery_address_id": picking.partner_id.address_get(["delivery"])[
+                        "delivery"
+                    ],
+                    "delivery_carrier_id": picking.l10n_ec_delivery_carrier_id.id,
+                    "l10n_ec_car_plate": picking.l10n_ec_delivery_carrier_id.l10n_ec_car_plate,
+                    "journal_id": picking.l10n_ec_delivery_note_journal_id.id,
+                }
+            ],
+        )
+        stock_move_line = picking.move_line_ids
+        self.assertRecordValues(
+            delivery_note.delivery_line_ids,
+            [
+                {
+                    "delivery_note_id": delivery_note.id,
+                    "product_id": stock_move_line.product_id.id,
+                    "product_qty": stock_move_line.qty_done,
+                    "product_uom_id": stock_move_line.product_uom_id.id,
+                    "move_id": stock_move_line.move_id.id,
+                    "production_lot_id": stock_move_line.lot_id.id,
+                }
+            ],
+        )
+        # ELiminar picking relacionado
+        with Form(delivery_note) as form:
+            form.stock_picking_ids.remove(picking.id)
+            self.assertFalse(form.delivery_line_ids)
 
     def test_l10n_ec_delivery_note_unlink(self):
         """Cancelar y eliminar guia de remisión"""
@@ -160,23 +164,22 @@ class TestL10nDeliveryNote(TestL10nDeliveryNoteCommon):
         self.assertEqual(delivery_note.state, "done")
         self.assertFalse(delivery_note.edi_document_ids)
 
-
-def test_l10n_ec_delivery_note_sri(self):
-    """Validar y enviar al SRI una guía de remisión con la configuración correcta"""
-    self.setup_edi_delivery_note()
-    delivery_note = self._l10n_ec_create_delivery_note()
-    # Transportista con cédula
-    delivery_note.delivery_carrier_id = self.partner_dni
-    delivery_note.action_confirm()
-    edi_doc = delivery_note._get_edi_document(self.edi_format)
-    edi_doc._process_documents_web_services(with_commit=False)
-    self.assertEqual(delivery_note.state, "done")
-    self.assertTrue(edi_doc.l10n_ec_xml_access_key)
-    try:
-        delivery_note.action_sent_mail_electronic()
-        mail_sended = True
-    except UserError as e:
-        _logger.warning(e.name)
-        mail_sended = False
-    self.assertTrue(mail_sended)
-    # TODO: validar que se autorice en el SRI con una firma válida
+    def test_l10n_ec_delivery_note_sri(self):
+        """Validar y enviar al SRI una guía de remisión con la configuración correcta"""
+        self.setup_edi_delivery_note()
+        delivery_note = self._l10n_ec_create_delivery_note()
+        # Transportista con cédula
+        delivery_note.delivery_carrier_id = self.partner_dni
+        delivery_note.action_confirm()
+        edi_doc = delivery_note._get_edi_document(self.edi_format)
+        edi_doc._process_documents_web_services(with_commit=False)
+        self.assertEqual(delivery_note.state, "done")
+        self.assertTrue(edi_doc.l10n_ec_xml_access_key)
+        try:
+            delivery_note.action_sent_mail_electronic()
+            mail_sended = True
+        except UserError as e:
+            _logger.warning(e.name)
+            mail_sended = False
+        self.assertTrue(mail_sended)
+        # TODO: validar que se autorice en el SRI con una firma válida
