@@ -96,44 +96,46 @@ class TestL10nSaleOrder(TestL10nDeliveryNoteCommon):
         )
         self.assertEqual(invoice.l10n_ec_delivery_note_ids.id, delivery_note.id)
 
-    # def test_l10n_ec_delivery_note_picking_backorder_sale_order(self):
-    #     """Crear picking con backorder asociados a un pedido,
-    #     y generar las guia de remisión"""
-    #     self.setup_edi_delivery_note()
-    #     sale_order = self._l10n_ec_prepare_sale_order()
-    #     sale_order.action_confirm()
-    #     picking = self._l10n_ec_create_or_modify_picking(
-    #         picking=sale_order.picking_ids, delivery_note=True
-    #     )
-    #     # picking.move_ids.product_uom_qty = 5
-    #     picking.action_confirm()
-    #     move_form = Form(picking.move_ids, view="stock.view_stock_move_operations")
-    #     with move_form.move_line_ids.new() as line:
-    #         line.qty_done = 1
-    #     move_form.save()
-    #     picking_context = picking.button_validate()
-    #     wiz = Form(
-    #         self.env[picking_context["res_model"]].with_context(
-    #             **picking_context["context"]
-    #         )
-    #     ).save()
-    #     wiz.process()
-    #     note1 = picking.l10n_ec_delivery_note_ids
-    #     self.assertTrue(picking.backorder_ids.ids)
-    #     self.assertEqual(picking.state, "done")
-    #     self.assertEqual(note1.state, "done")
-    #     # Validar el picking en backorder y crear otra guia de remisión
-    #     picking_backorder = picking.backorder_ids
-    #     picking_backorder.action_set_quantities_to_reservation()
-    #     picking_backorder_context = picking_backorder.button_validate()
-    #     wiz = Form(
-    #         self.env[picking_context["res_model"]].with_context(
-    #             **picking_backorder_context["context"]
-    #         )
-    #     ).save()
-    #     wiz.process()
-    #     note2 = picking_backorder.l10n_ec_delivery_note_ids
-    #     self.assertEqual(picking_backorder.state, "done")
-    #     self.assertEqual(note2.state, "done")
-    #     self.assertEqual(sale_order.l10n_ec_delivery_note_ids, note1 + note2)
-    #     self.assertTrue(sale_order.action_view_l10n_ec_delivery_note()["domain"])
+    def test_l10n_ec_delivery_note_picking_backorder_sale_order(self):
+        """Crear picking con backorder asociados a un pedido,
+        y generar las guia de remisión"""
+        self.setup_edi_delivery_note()
+        sale_order = self._l10n_ec_prepare_sale_order()
+        sale_order.action_confirm()
+        picking = self._l10n_ec_create_or_modify_picking(
+            picking=sale_order.picking_ids, delivery_note=True
+        )
+        picking.move_ids_without_package.product_uom_qty = 5
+        picking.action_confirm()
+        move_form = Form(
+            picking.move_ids_without_package, view="stock.view_stock_move_operations"
+        )
+        with move_form.move_line_ids.new() as line:
+            line.qty_done = 1
+        move_form.save()
+        picking_context = picking.button_validate()
+        wiz = Form(
+            self.env[picking_context["res_model"]].with_context(
+                **picking_context["context"]
+            )
+        ).save()
+        wiz.process()
+        note1 = picking.l10n_ec_delivery_note_ids
+        self.assertTrue(picking.backorder_ids.ids)
+        self.assertEqual(picking.state, "done")
+        self.assertEqual(note1.state, "done")
+        # Validar el picking en backorder y crear otra guia de remisión
+        picking_backorder = picking.backorder_ids
+        picking_backorder.action_set_quantities_to_reservation()
+        picking_backorder_context = picking_backorder.button_validate()
+        wiz = Form(
+            self.env[picking_context["res_model"]].with_context(
+                **picking_backorder_context["context"]
+            )
+        ).save()
+        wiz.process()
+        note2 = picking_backorder.l10n_ec_delivery_note_ids
+        self.assertEqual(picking_backorder.state, "done")
+        self.assertEqual(note2.state, "done")
+        self.assertEqual(sale_order.l10n_ec_delivery_note_ids, note1 + note2)
+        self.assertTrue(sale_order.action_view_l10n_ec_delivery_note()["domain"])
