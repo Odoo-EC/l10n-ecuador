@@ -97,10 +97,10 @@ class StockPicking(models.Model):
                     lambda m: m.state not in ("done", "cancel")
                 )
             )
-            reserved_qty = 0
+
             no_reserved_quantities = all(
                 float_is_zero(
-                    reserved_qty,
+                    move_line.product_qty,
                     precision_rounding=move_line.product_uom_id.rounding,
                 )
                 for move_line in self.move_line_ids
