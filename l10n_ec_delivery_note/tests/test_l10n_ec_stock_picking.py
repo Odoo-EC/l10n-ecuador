@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+from odoo import fields
 from odoo.exceptions import UserError
 from odoo.tests import Form, tagged
 
@@ -162,51 +165,50 @@ class TestL10nStockPicking(TestL10nDeliveryNoteCommon):
         self.assertEqual(picking.state, "done")
         self.assertEqual(picking.l10n_ec_delivery_note_ids.state, "done")
 
-    # TODO - Wizard not exist
-    # def test_l10n_ec_wizard_create_delivery_note(self):
-    #     """Pruebas en wizard de crear guia de remisión"""
-    #     self.setup_edi_delivery_note()
-    #     # Agregar los dias por defecto para la entrega
-    #     picking = self._l10n_ec_create_or_modify_picking()
-    #     picking.action_confirm()
-    #     picking_context = picking.button_validate()
-    #     wiz = Form(
-    #         self.env[picking_context["res_model"]].with_context(
-    #             **picking_context["context"]
-    #         )
-    #     )
-    #     self.assertEqual(wiz.delivery_date, wiz.transfer_date + timedelta(days=2))
-    #     delivery_date_1 = wiz.delivery_date
-    #     wiz.transfer_date = False
-    #     self.assertEqual(wiz.delivery_date, delivery_date_1)
-    #     wiz.transfer_date = fields.Date.today() - timedelta(days=1)
-    #     self.assertNotEqual(wiz.delivery_date, delivery_date_1)
-    #     with self.assertRaises(UserError):
-    #         wiz.delivery_date = wiz.transfer_date - timedelta(days=1)
+    def test_l10n_ec_wizard_create_delivery_note(self):
+        """Pruebas en wizard de crear guia de remisión"""
+        self.setup_edi_delivery_note()
+        # Agregar los dias por defecto para la entrega
+        picking = self._l10n_ec_create_or_modify_picking()
+        picking.action_confirm()
+        picking_context = picking.button_validate()
+        wiz = Form(
+            self.env[picking_context["res_model"]].with_context(
+                **picking_context["context"]
+            )
+        )
+        self.assertEqual(wiz.delivery_date, wiz.transfer_date + timedelta(days=2))
+        delivery_date_1 = wiz.delivery_date
+        wiz.transfer_date = False
+        self.assertEqual(wiz.delivery_date, delivery_date_1)
+        wiz.transfer_date = fields.Date.today() - timedelta(days=1)
+        self.assertNotEqual(wiz.delivery_date, delivery_date_1)
+        with self.assertRaises(UserError):
+            wiz.delivery_date = wiz.transfer_date - timedelta(days=1)
 
-    # def test_l10n_ec_process_picking_note_sri(self):
-    #     """Validar y enviar al SRI una guía de remisión
-    #     creada desde el picking, transferencia inmediata"""
-    #     self.setup_edi_delivery_note()
-    #     picking = self._l10n_ec_create_or_modify_picking()
-    #     # Asociar el partner a una compañia
-    #     picking.partner_id.parent_id = self.company_data["company"].partner_id.id
-    #     picking.action_confirm()
-    #     picking_context = picking.button_validate()
-    #     wiz = Form(
-    #         self.env[picking_context["res_model"]].with_context(
-    #             **picking_context["context"]
-    #         )
-    #     ).save()
-    #     wiz.process()
-    #     delivery_note = picking.l10n_ec_delivery_note_ids
-    #     self.assertEqual(picking.state, "done")
-    #     self.assertEqual(delivery_note.state, "done")
-    #     self.assertEqual(delivery_note.partner_id, picking.partner_id.parent_id)
-    #     edi_doc = delivery_note._get_edi_document(self.edi_format)
-    #     edi_doc._process_documents_web_services(with_commit=False)
-    #     self.assertTrue(edi_doc.l10n_ec_xml_access_key)
-    #     self.assertTrue(picking.l10n_ec_do_print_delivery_notes())
+    def test_l10n_ec_process_picking_note_sri(self):
+        """Validar y enviar al SRI una guía de remisión
+        creada desde el picking, transferencia inmediata"""
+        self.setup_edi_delivery_note()
+        picking = self._l10n_ec_create_or_modify_picking()
+        # Asociar el partner a una compañia
+        picking.partner_id.parent_id = self.company_data["company"].partner_id.id
+        picking.action_confirm()
+        picking_context = picking.button_validate()
+        wiz = Form(
+            self.env[picking_context["res_model"]].with_context(
+                **picking_context["context"]
+            )
+        ).save()
+        wiz.process()
+        delivery_note = picking.l10n_ec_delivery_note_ids
+        self.assertEqual(picking.state, "done")
+        self.assertEqual(delivery_note.state, "done")
+        self.assertEqual(delivery_note.partner_id, picking.partner_id.parent_id)
+        edi_doc = delivery_note._get_edi_document(self.edi_format)
+        edi_doc._process_documents_web_services(with_commit=False)
+        self.assertTrue(edi_doc.l10n_ec_xml_access_key)
+        self.assertTrue(picking.l10n_ec_do_print_delivery_notes())
 
     def test_l10n_ec_internal_picking_delivery_note(self):
         """Validar y enviar al SRI una guía de remisión

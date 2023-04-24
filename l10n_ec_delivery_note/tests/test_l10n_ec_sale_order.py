@@ -6,25 +6,36 @@ from .test_l10n_ec_delivery_note_common import TestL10nDeliveryNoteCommon
 
 @tagged("post_install_l10n_ec_account_edi", "post_install", "-at_install")
 class TestL10nSaleOrder(TestL10nDeliveryNoteCommon):
-    # def test_l10n_ec_sale_order_picking_internal(self):
-    #     """Validar creación de guia de remisión de picking
-    #     cuando la ubicación destino es interna"""
-    #     self.setup_edi_delivery_note()
-    #     self.setup_multistage_routes()
-    #     sale_order = self._l10n_ec_prepare_sale_order()
-    #     sale_order.action_confirm()
-    #     picking_internal = sale_order.picking_ids.search(
-    #         [("location_dest_id.usage", "=", "internal")], limit=1, order="id asc"
-    #     )
-    #     picking = self._l10n_ec_create_or_modify_picking(picking=picking_internal)
-    #     picking_context = picking.button_validate()
-    #     wiz = Form(
-    #         self.env[picking_context["res_model"]].with_context(
-    #             **picking_context["context"]
-    #         )
-    #     ).save()
-    #     with self.assertRaises(UserError):
-    #         wiz.process()
+    def test_l10n_ec_sale_order_picking_internal(self):
+        """Validar creación de guia de remisión de picking
+        cuando la ubicación destino es interna"""
+        self.setup_edi_delivery_note()
+        self.setup_multistage_routes()
+        sale_order = self._l10n_ec_prepare_sale_order()
+        sale_order.action_confirm()
+        picking_internal = sale_order.picking_ids.search(
+            [("location_dest_id.usage", "=", "internal")], limit=1, order="id asc"
+        )
+        picking = self._l10n_ec_create_or_modify_picking(picking=picking_internal)
+        # Added
+        # move_form = Form(
+        #     picking.move_ids_without_package, view="stock.view_stock_move_operations"
+        # )
+        # with move_form.move_line_ids.new() as line:
+        #     line.qty_done = 1
+        # move_form.save()
+        # END
+        picking_context = picking.button_validate()
+        wiz = Form(
+            self.env[picking_context["res_model"]].with_context(
+                **picking_context["context"]
+            )
+        ).save()
+        with self.assertRaises(UserError):
+            if wiz._name == "wizard.input.document.number":
+                wiz.action_create_delivery_note()
+            else:
+                wiz.process()
 
     def test_l10n_ec_sale_order_picking_in_3_steps(self):
         """Desde acción crear una guia de remisión,de pickings
