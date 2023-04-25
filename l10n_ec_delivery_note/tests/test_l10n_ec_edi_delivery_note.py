@@ -27,14 +27,14 @@ class TestL10nDeliveryNote(TestL10nDeliveryNoteCommon):
         with self.assertRaises(UserError):
             delivery_note.action_confirm()
 
-    # def test_l10n_ec_delivery_note_date_form(self):
-    #     self.setup_edi_delivery_note()
-    #     delivery_note = self._l10n_ec_create_delivery_note()
-    #     print(f"delivery_note.delivery_date {delivery_note.delivery_date}")
-    #     delivery_note.transfer_date = delivery_note.transfer_date + timedelta(days=1)
-    #     print(f"delivery_note.transfer_date {delivery_note.transfer_date}")
-    #     with self.assertRaises(UserError):
-    #         delivery_note.action_confirm()
+    def test_l10n_ec_delivery_note_date_form(self):
+        self.setup_edi_delivery_note()
+        delivery_note = self._l10n_ec_create_delivery_note()
+        with self.assertRaises(UserError):
+            delivery_note.transfer_date = delivery_note.transfer_date + timedelta(
+                days=1
+            )
+            # delivery_note.action_confirm()
 
     def test_l10n_ec_delivery_note_fields_form(self):
         """Test prueba campos computados, onchange

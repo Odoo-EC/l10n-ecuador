@@ -181,7 +181,7 @@ class TestL10nStockPicking(TestL10nDeliveryNoteCommon):
         delivery_date_1 = wiz.delivery_date
         wiz.transfer_date = False
         self.assertEqual(wiz.delivery_date, delivery_date_1)
-        wiz.transfer_date = fields.Date.today() - timedelta(days=1)
+        wiz.transfer_date = fields.Date.today() - timedelta(days=3)
         self.assertNotEqual(wiz.delivery_date, delivery_date_1)
         with self.assertRaises(UserError):
             wiz.delivery_date = wiz.transfer_date - timedelta(days=1)
