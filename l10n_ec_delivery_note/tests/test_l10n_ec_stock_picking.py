@@ -80,44 +80,45 @@ class TestL10nStockPicking(TestL10nDeliveryNoteCommon):
         self.assertFalse(picking.backorder_ids.ids)
         self.assertEqual(picking.state, "done")
 
-    # def test_l10n_ec_picking_stock_lots(self):
-    #     """Transferencia y guía con trazabilidad por lotes"""
-    #     self.setup_edi_delivery_note()
-    #     lot = self.setup_stock_traceability()
-    #     picking = self._l10n_ec_create_or_modify_picking()
-    #     picking.action_confirm()
-    #     # Validar sin escoger el lote
-    #     with self.assertRaises(UserError):
-    #         picking.move_ids_without_package.quantity_done = 1
-    #         picking.button_validate()
-    #     move_form = Form(picking.move_ids_without_package,
-    #                       view="stock.view_stock_move_operations")
-    #     with move_form.move_line_ids.new() as line:
-    #         line.lot_id = lot
-    #         line.qty_done = 1
-    #     move_form.save()
-    #     picking_context = picking.button_validate()
-    #     wiz = Form(
-    #         self.env[picking_context["res_model"]].with_context(
-    #             **picking_context["context"]
-    #         )
-    #     ).save()
-    #     wiz.action_create_delivery_note()
-    #     delivery_note = picking.l10n_ec_delivery_note_ids
-    #     self.assertEqual(picking.state, "done")
-    #     self.assertEqual(delivery_note.state, "done")
-    #     stock_move_line = picking.move_line_ids
-    #     self.assertRecordValues(
-    #         delivery_note.delivery_line_ids,
-    #         [
-    #             {
-    #                 "product_id": stock_move_line.product_id.id,
-    #                 "product_qty": stock_move_line.qty_done,
-    #                 "product_uom_id": stock_move_line.product_uom_id.id,
-    #                 "production_lot_id": stock_move_line.lot_id.id,
-    #             }
-    #         ],
-    #     )
+    def test_l10n_ec_picking_stock_lots(self):
+        """Transferencia y guía con trazabilidad por lotes"""
+        self.setup_edi_delivery_note()
+        lot = self.setup_stock_traceability()
+        picking = self._l10n_ec_create_or_modify_picking()
+        picking.action_confirm()
+        # Validar sin escoger el lote
+        with self.assertRaises(UserError):
+            picking.move_ids_without_package.quantity_done = 1
+            picking.button_validate()
+        move_form = Form(
+            picking.move_ids_without_package, view="stock.view_stock_move_operations"
+        )
+        with move_form.move_line_ids.new() as line:
+            line.lot_id = lot
+            line.qty_done = 1
+        move_form.save()
+        picking_context = picking.button_validate()
+        wiz = Form(
+            self.env[picking_context["res_model"]].with_context(
+                **picking_context["context"]
+            )
+        ).save()
+        wiz.action_create_delivery_note()
+        delivery_note = picking.l10n_ec_delivery_note_ids
+        self.assertEqual(picking.state, "done")
+        self.assertEqual(delivery_note.state, "done")
+        stock_move_line = picking.move_line_ids
+        self.assertRecordValues(
+            delivery_note.delivery_line_ids,
+            [
+                {
+                    "product_id": stock_move_line.product_id.id,
+                    "product_qty": stock_move_line.qty_done,
+                    "product_uom_id": stock_move_line.product_uom_id.id,
+                    "production_lot_id": stock_move_line.lot_id.id,
+                }
+            ],
+        )
 
     def test_l10n_ec_picking_backorder_delivery_note(self):
         """Transferencia con Backorder creando guía de remisión"""
