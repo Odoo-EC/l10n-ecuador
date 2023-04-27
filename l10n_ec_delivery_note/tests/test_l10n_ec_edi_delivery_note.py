@@ -27,6 +27,15 @@ class TestL10nDeliveryNote(TestL10nDeliveryNoteCommon):
         with self.assertRaises(UserError):
             delivery_note.action_confirm()
 
+    def test_l10n_ec_delivery_date_form(self):
+        """
+        Test when delivery date is less than transfer date
+        """
+        self.setup_edi_delivery_note()
+        delivery = self._l10n_ec_create_delivery_note()
+        with self.assertRaises(ValidationError):
+            delivery.delivery_date = delivery.delivery_date - timedelta(days=1)
+
     def test_l10n_ec_delivery_note_date_form(self):
         self.setup_edi_delivery_note()
         delivery_note = self._l10n_ec_create_delivery_note()

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from odoo import api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools.translate import _
 
 STATES = {"draft": [("readonly", False)]}
@@ -300,17 +300,17 @@ class DeliveryNote(models.Model):
     #         note.l10n_ec_xml_access_key = edi_doc.l10n_ec_xml_access_key
     #
     # @api.onchange("transfer_date", "delivery_date")
-    # @api.constrains("transfer_date", "delivery_date")
-    # def _check_transfer_dates(self):
-    #     for delivery_note in self:
-    #         if (
-    #             delivery_note.transfer_date
-    #             and delivery_note.delivery_date
-    #             and delivery_note.delivery_date < delivery_note.transfer_date
-    #         ):
-    #             raise ValidationError(
-    #                 _("The Delivery Date can't less than transfer date, please check")
-    #             )
+    @api.constrains("transfer_date", "delivery_date")
+    def _check_transfer_dates(self):
+        for delivery in self:
+            if (
+                delivery.transfer_date
+                and delivery.delivery_date
+                and delivery.delivery_date < delivery.transfer_date
+            ):
+                raise ValidationError(
+                    _("The Delivery Date can't less than transfer date, please check")
+                )
 
     @api.constrains("transfer_date")
     def _check_transfer_date(self):
