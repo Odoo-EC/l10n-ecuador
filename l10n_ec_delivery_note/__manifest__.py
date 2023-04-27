@@ -7,7 +7,7 @@
     "category": "Stock",
     "version": "15.0.1.0.0",
     "depends": [
-        "sale_management",
+        "sale",
         "stock",
         "l10n_ec_account_edi",
     ],
