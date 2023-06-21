@@ -256,9 +256,7 @@ class AccountEdiDocument(models.Model):
             if invoice
             else False,
             "detalles": self._l10n_ec_get_details_delivery_note(delivery_note),
-            "infoAdicional": [],
-            # uncomment when PR https://github.com/OCA/l10n-ecuador/pull/36 is merge
-            # "infoAdicional": self._l10n_ec_get_info_additional(),
+            "infoAdicional": self._l10n_ec_get_info_additional(),
         }
         delivery_note_data.update(self._l10n_ec_get_info_tributaria(delivery_note))
         return delivery_note_data
@@ -276,23 +274,30 @@ class AccountEdiDocument(models.Model):
         return super().l10n_ec_get_current_document()
 
     @api.model
-    def _l10n_ec_get_edi_document_for_send_mail(
-        self, company, date_from, partners_to_exclude
-    ):
-        edi_documents = super()._l10n_ec_get_edi_document_for_send_mail(
-            company, date_from, partners_to_exclude
-        )
-        domain = [
-            ("l10n_ec_delivery_note_id.company_id", "=", company.id),
-            ("l10n_ec_delivery_note_id.partner_id", "not in", partners_to_exclude.ids),
-            ("state", "=", "sent"),
-            ("l10n_ec_send_mail", "=", False),
-            ("l10n_ec_authorization_date", ">=", date_from),
-        ]
-        if not company.l10n_ec_send_mail_remission:
-            domain.append(("l10n_ec_delivery_note_id", "=", False))
-        return self.search(domain, limit=company.l10n_ec_cron_process) + edi_documents
+    def l10n_ec_send_mail_to_partner(self):
+        value = super().l10n_ec_send_mail_to_partner()
 
-    def _l10n_ec_get_partner_for_create_login(self):
-        partners = super()._l10n_ec_get_partner_for_create_login()
-        return partners + self.mapped("l10n_ec_delivery_note_id.partner_id")
+        domain = [
+            ("state", "=", "done"),
+            ("is_delivery_note_sent", "=", False),
+            ("l10n_ec_authorization_date", "!=", False),
+        ]
+        delivery_notes = self.env["l10n_ec.delivery.note"].search(
+            domain
+            + [
+                ("partner_id.vat", "not in", ["9999999999999", "9999999999"]),
+            ]
+        )
+        for note in delivery_notes:
+            note.l10n_ec_action_sent_mail_electronic()
+
+        # Update documents with final consumer
+        delivery_notes_with_final_consumer = self.env["l10n_ec.delivery.note"].search(
+            domain
+            + [
+                ("partner_id.vat", "in", ["9999999999999", "9999999999"]),
+            ]
+        )
+        delivery_notes_with_final_consumer.write({"is_delivery_note_sent": True})
+
+        return value

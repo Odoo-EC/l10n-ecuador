@@ -197,6 +197,8 @@ class DeliveryNote(models.Model):
         domain="[('code', '=', '06')]",
     )
 
+    is_delivery_note_sent = fields.Boolean(default=False)
+
     @api.depends("journal_id")
     def _compute_document_number(self):
         self.filtered(
