@@ -186,6 +186,7 @@ class TestL10nDeliveryNote(TestL10nDeliveryNoteCommon):
         self.assertTrue(edi_doc.l10n_ec_xml_access_key)
         try:
             delivery_note.action_sent_mail_electronic()
+            delivery_note.l10n_ec_action_sent_mail_electronic()
             mail_sended = True
         except UserError as e:
             _logger.warning(e.name)
