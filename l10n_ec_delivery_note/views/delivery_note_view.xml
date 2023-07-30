@@ -308,7 +308,6 @@
                     </notebook>
                 </sheet>
                 <div class="oe_chatter">
-                    <field name="message_follower_ids" widget="mail_followers" />
                     <field name="activity_ids" widget="mail_activity" />
                     <field name="message_ids" widget="mail_thread" />
                 </div>
@@ -385,7 +384,7 @@
         </field>
     </record>
     <record model="ir.actions.act_window" id="action_delivery_note">
-        <field name="name">Delivery Note</field>
+        <field name="name">Delivery Notes</field>
         <field name="res_model">l10n_ec.delivery.note</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="delivery_note_search_view" />

@@ -15,4 +15,4 @@ class ResCompany(models.Model):
         string="Delivery Note Version xml",
         default="1.1.0",
     )
-    l10n_ec_send_mail_remission = fields.Boolean("Guía de Remisión?", default=True)
+    l10n_ec_send_mail_remission = fields.Boolean("Delivery Note?", default=True)

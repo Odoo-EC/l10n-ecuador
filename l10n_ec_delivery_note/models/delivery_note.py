@@ -82,7 +82,7 @@ class DeliveryNote(models.Model):
         related="partner_id.commercial_partner_id",
         store=True,
         readonly=True,
-        help="The commercial entity that will be used on Journal Entries for this invoice",
+        help="The commercial entity that will be used for this delivery note",
     )
     delivery_address_id = fields.Many2one(
         "res.partner",
@@ -137,6 +137,7 @@ class DeliveryNote(models.Model):
         readonly=True,
         states=STATES,
         default=lambda self: self.env.company,
+        required=True,
     )
     country_code = fields.Char(
         related="company_id.account_fiscal_country_id.code", readonly=True
@@ -422,8 +423,8 @@ class DeliveryNote(models.Model):
         return True
 
     def action_cancel(self):
-        for remission in self:
-            remission.write({"state": "cancel"})
+        for delivery_note in self:
+            delivery_note.write({"state": "cancel"})
         return True
 
     def action_set_draft(self):

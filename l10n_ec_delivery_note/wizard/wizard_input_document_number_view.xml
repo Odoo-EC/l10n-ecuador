@@ -25,16 +25,6 @@
                         </h1>
                     </div>
                     <group col="6">
-                        <!--<field
-                            name="invoice_id"
-                            options="{'no_create': True}"
-                            domain="[
-                            ('move_type', '=', 'out_invoice'),
-                            ('partner_id', '=', partner_id),
-                            ('journal_id.l10n_latam_internal_type', '=', 'invoice'),
-                            ('state', '=', 'posted')
-                            ]"
-                        />-->
                         <field name="rise" />
                         <field name="dau" />
                     </group>
@@ -116,16 +106,6 @@
                     </group>
                     <newline />
                     <group col="6" colspan="4">
-                        <!--<field
-                            name="invoice_id"
-                            options="{'no_create': True}"
-                            domain="[
-                            ('move_type', '=', 'out_invoice'),
-                            ('partner_id', '=', partner_id),
-                            ('journal_id.l10n_latam_internal_type', '=', 'invoice'),
-                            ('state', '=', 'posted'),
-                            ]"
-                        />-->
                         <field name="rise" />
                         <field name="dau" />
                     </group>
@@ -177,16 +157,6 @@
                     </group>
                     <newline />
                     <group col="6" colspan="4">
-                        <!--<field
-                            name="invoice_id"
-                            options="{'no_create': True}"
-                            domain="[
-                            ('move_type', '=', 'out_invoice'),
-                            ('partner_id', '=', partner_id),
-                            ('journal_id.l10n_latam_internal_type', '=', 'invoice'),
-                            ('state', '=', 'posted')
-                            ]"
-                        />-->
                         <field name="rise" />
                         <field name="dau" />
                     </group>
