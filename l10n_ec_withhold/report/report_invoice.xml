@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+    <template id="report_invoice_withhold" inherit_id="l10n_ec_account_edi.report_invoice_document">
+        <xpath expr='//div[@class="article"]' position="inside">
+            <t t-if="o.l10n_latam_document_type_id.internal_type == 'withhold'">
+                <t t-call="l10n_ec_withhold.e_withhold_document_body"/>
+            </t>
+        </xpath>
+    </template>
+</odoo>
