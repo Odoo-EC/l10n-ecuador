@@ -5,6 +5,22 @@ from odoo.tools.safe_eval import safe_eval
 
 _logger = logging.getLogger(__name__)
 
+SUSTENTO_TRIBUTARIO = [
+    ('00', 'No aplica'),
+    ('01', 'Crédito Tributario para declaración de IVA (servicios y bienes distintos de inventarios y activos fijos'),
+    ('02', 'Costo o Gasto para declaración de IR (servicios y bienes distintos de inventarios y activos fijos'),
+    ('03', 'Activo Fijo - Crédito Tributario para declaración de IVA'),
+    ('04', 'Activo Fijo - Costo o Gasto para declaración de IR'),
+    ('05', 'Liquidación Gastos de Viaje, hospedaje y alimentación Gastos IR (a nombre de empleados y no de la empresa'),
+    ('06', 'Inventario - Crédito Tributario para declaración de IVA'),
+    ('07', 'Inventario - Costo o Gasto para declaración de IR'),
+    ('08', 'Valor pagado para solicitar Reembolso de Gasto (intermediario)'),
+    ('09', 'Reembolso por Siniestros'),
+    ('10', 'Distribución de Dividendos, Beneficios o Utilidades'),
+    ('11', 'Convenios de débito o recaudación para IFI´s'),
+    ('12', 'Impuestos y retenciones presuntivos'),
+    ('13', 'Valores reconocidos por entidades del sector público a favor de sujetos pasivos')]
+
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -108,6 +124,12 @@ class AccountMove(models.Model):
         for move in self:
             move.l10n_ec_withhold_active = move.partner_id.l10n_ec_withhold_related
 
+    sustento_tributario = fields.Selection(
+        SUSTENTO_TRIBUTARIO,
+        string='Sustento Tributario',
+        help='Sustento tributario en linea de factura'
+    )
+
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -118,4 +140,10 @@ class AccountMoveLine(models.Model):
         readonly=True,
         required=False,
         store=True,
+    )
+
+    sustento_tributario = fields.Selection(
+        SUSTENTO_TRIBUTARIO,
+        string='Sustento Tributario',
+        help='Sustento tributario en linea de factura'
     )

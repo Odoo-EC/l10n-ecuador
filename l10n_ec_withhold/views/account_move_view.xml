@@ -3,10 +3,10 @@
     <record model="ir.ui.view" id="account_invoice_custom_view">
         <field name="name">Facturas con retencion</field>
         <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_move_form" />
+        <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//button[@name='preview_invoice']" position="before">
-                    <button
+                <button
                     name="action_create_sale_withhold_wizard"
                     string="Agregar Rentencion"
                     type="object"
@@ -24,7 +24,7 @@
                 >
                     <div class="o_field_widget o_stat_info">
                         <span class="o_stat_value">
-                            <field name="l10n_ec_withhold_count" />
+                            <field name="l10n_ec_withhold_count"/>
                         </span>
                         <span class="o_stat_text">Withholding</span>
                     </div>
@@ -47,14 +47,14 @@
                 >
                     <field name="l10n_ec_withhold_line_ids" mode="tree,kanban">
                         <tree editable="bottom">
-                            <field name="company_id" invisible='1' />
+                            <field name="company_id" invisible='1'/>
                             <field
                                 name="tax_ids"
                                 string="Tax"
                                 widget="many2many_tags"
                             />
-                            <field name="tax_base_amount" string="Monto base" />
-                            <field name="balance" string="Monto retenido" />
+                            <field name="tax_base_amount" string="Monto base"/>
+                            <field name="balance" string="Monto retenido"/>
                         </tree>
                     </field>
                     <field
@@ -66,8 +66,17 @@
                 </page>
             </xpath>
             <xpath expr="//field[@name='reversed_entry_id']" position="after">
-                <field name="l10n_latam_internal_type" invisible="1" />
-                <field name="l10n_ec_withhold_active" invisible="1" />
+                <field name="l10n_latam_internal_type" invisible="1"/>
+                <field name="l10n_ec_withhold_active" invisible="1"/>
+            </xpath>
+
+            <xpath expr="//field[@name='fiscal_position_id']" position="before">
+                <field name="sustento_tributario" attrs="{'invisible': [('move_type', '!=', 'in_invoice')]}"/>
+            </xpath>
+
+            <xpath expr="//field[@name='invoice_line_ids']/tree/field[@name='company_id']" position="after">
+                <field name="sustento_tributario"/>
+                <!--                TODO: Solo cuando es factura de proveedor-->
             </xpath>
         </field>
     </record>
