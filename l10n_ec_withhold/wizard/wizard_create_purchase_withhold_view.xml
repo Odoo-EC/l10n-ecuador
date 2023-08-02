@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-    <record id="l10n_ec_wizard_sale_withhold_form_view" model="ir.ui.view">
-        <field name="name">Create Sale Withhold Wizard</field>
-        <field name="model">l10n_ec.wizard.create.sale.withhold</field>
+    <record id="l10n_ec_wizard_purchase_withhold_form_view" model="ir.ui.view">
+        <field name="name">Create purchase Withhold Wizard</field>
+        <field name="model">l10n_ec.wizard.create.purchase.withhold</field>
         <field name="arch" type="xml">
             <form>
                 <group>
@@ -12,11 +12,10 @@
                         <field
                             name="journal_id"
                             required="1"
-                            domain="[('type', '=', 'sale')]"
+                            domain="[('type', '=', 'purchase')]"
                             options="{'no_create': True}"
                         />
                         <field name="document_number" />
-                        <field name="electronic_authorization" required="1"/>
                         <field name="invoice_id" invisible="1" />
                     </group>
                 </group>
@@ -33,7 +32,7 @@
                                         name="tax_withhold_id"
                                         required="1"
                                         options="{'no_create': True}"
-                                        domain="[('tax_group_id', '=', tax_group_withhold_id), ('type_tax_use', '=', 'sale')]"
+                                        domain="[('tax_group_id', '=', tax_group_withhold_id), ('type_tax_use', '=', 'purchase')]"
                                     />
                                     <field name="base_amount" />
                                     <field name="withhold_amount" />
@@ -63,14 +62,14 @@
 
 
     <record
-        id="l10n_ec_wizard_sale_withhold_action_window"
+        id="l10n_ec_wizard_purchase_withhold_action_window"
         model="ir.actions.act_window"
     >
-        <field name="name">Sales Withholding</field>
+        <field name="name">Purchases Withholding</field>
         <field name="type">ir.actions.act_window</field>
-        <field name="res_model">l10n_ec.wizard.create.sale.withhold</field>
+        <field name="res_model">l10n_ec.wizard.create.purchase.withhold</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
-        <field name="view_id" ref="l10n_ec_wizard_sale_withhold_form_view" />
+        <field name="view_id" ref="l10n_ec_wizard_purchase_withhold_form_view" />
     </record>
 </odoo>

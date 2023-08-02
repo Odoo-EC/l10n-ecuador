@@ -3,19 +3,26 @@ import logging
 from odoo import _, api, fields, models
 from odoo.tools.safe_eval import safe_eval
 
+from .data import TAX_SUPPORT
+
 _logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    l10n_ec_withholding_type = fields.Selection(
+        [
+            ("purchase", "Purchase"),
+            ("sale", "Sale"),
+        ],
+        string="Withholding Type",
+    )
     l10n_ec_withhold_line_ids = fields.One2many(
         comodel_name="account.move.line",
         inverse_name="l10n_ec_withhold_id",
         string="Lineas de retencion",
-        required=True,
         readonly=True,
-        store=True,
     )
     l10n_ec_withhold_ids = fields.Many2many(
         "account.move",
@@ -23,7 +30,6 @@ class AccountMove(models.Model):
         column1="move_id",
         column2="withhold_id",
         string="Withhold",
-        store=True,
         readonly=True,
     )
 
@@ -32,9 +38,13 @@ class AccountMove(models.Model):
     )
 
     l10n_ec_withhold_active = fields.Boolean(
-        string="Withholds Count",
+        string="Withholds ?",
         compute="_compute_l10n_ec_withhold_active",
         store=True,
+    )
+
+    l10n_ec_tax_support = fields.Selection(
+        TAX_SUPPORT, string="Tax Support", help="Tax support in invoice line"
     )
 
     def action_create_sale_withhold_wizard(self):
@@ -62,29 +72,51 @@ class AccountMove(models.Model):
         action["context"] = ctx
         return action
 
+    def action_create_purchase_withhold_wizard(self):
+        self.ensure_one()
+        action = self.env.ref(
+            "l10n_ec_withhold.l10n_ec_wizard_purchase_withhold_action_window"
+        ).read()[0]
+        action["views"] = [
+            (
+                self.env.ref(
+                    "l10n_ec_withhold.l10n_ec_wizard_purchase_withhold_form_view"
+                ).id,
+                "form",
+            )
+        ]
+        ctx = safe_eval(action["context"])
+        ctx.pop("default_type", False)
+        ctx.update(
+            {
+                "default_partner_id": self.partner_id.id,
+                "default_invoice_id": self.id,
+                "default_issue_date": self.invoice_date,
+            }
+        )
+        action["context"] = ctx
+        return action
+
     def action_show_l10n_ec_withholds(self):
         withhold_ids = self.l10n_ec_withhold_ids.ids
-        action = self.env["ir.actions.actions"]._for_xml_id(
-            "account.action_move_journal_line"
-        )
-        action["name"] = _("Withholding")
+        action = self.env.ref("account.action_move_journal_line").read()[0]
         context = {
             "create": False,
-            "delete": False,
+            "delete": True,
             "edit": False,
         }
         action["context"] = context
+        action["name"] = _("Withholding")
+        view_tree_id = self.env.ref("l10n_ec_withhold.view_account_move_withhold_tree").id
+        view_form_id = self.env.ref("l10n_ec_withhold.view_account_move_withhold_form").id
+        action["view_mode"] = "form"
+        action["views"] = [(view_form_id, "form")]
+        action["res_id"] = withhold_ids[0]
         if len(withhold_ids) > 1:
+            action["view_mode"] = "tree,form"
+            action["views"] = [(view_tree_id, "tree"), (view_form_id, "form")]
             action["domain"] = [("id", "in", withhold_ids)]
-        else:
-            form_view = [(self.env.ref("account.view_move_form").id, "form")]
-            if "views" in action:
-                action["views"] = form_view + [
-                    (state, view) for state, view in action["views"] if view != "form"
-                ]
-            else:
-                action["views"] = form_view
-            action["res_id"] = withhold_ids[0]
+
         return action
 
     @api.depends("line_ids.l10n_ec_withhold_id", "line_ids")
@@ -103,10 +135,28 @@ class AccountMove(models.Model):
             self.l10n_ec_withhold_count = 0
             self.l10n_ec_withhold_ids = False
 
-    @api.depends("partner_id.l10n_ec_withhold_related")
+    @api.depends("partner_id.property_account_position_id", "fiscal_position_id.l10n_ec_withhold",
+                 "company_id.property_account_position_id")
     def _compute_l10n_ec_withhold_active(self):
         for move in self:
-            move.l10n_ec_withhold_active = move.partner_id.l10n_ec_withhold_related
+            # En Ventas si la posición fiscal del cliente retiene
+            move.l10n_ec_withhold_active = move.fiscal_position_id.l10n_ec_withhold
+            if (
+                move.move_type in move.get_purchase_types()
+                and move.l10n_ec_withhold_active
+                and self.company_id.property_account_position_id
+            ):
+                # En Compras si la posición fiscal retiene y el proveedor retiene, vemos si la compañía retiene
+                move.l10n_ec_withhold_active = self.company_id.property_account_position_id.l10n_ec_withhold
+
+    def _get_l10n_ec_tax_support(self):
+        self.ensure_one()
+        return self.partner_id.l10n_ec_tax_support
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        self.l10n_ec_tax_support = self._get_l10n_ec_tax_support()
+        return super(AccountMove, self)._onchange_partner_id()
 
 
 class AccountMoveLine(models.Model):
@@ -116,6 +166,27 @@ class AccountMoveLine(models.Model):
         comodel_name="account.move",
         string="Withhold",
         readonly=True,
-        required=False,
-        store=True,
+        copy=False,
     )
+
+    l10n_ec_tax_support = fields.Selection(
+        TAX_SUPPORT,
+        string="Tax Support",
+        copy=False,
+        help="Tax support in invoice line",
+    )
+
+    @api.onchange("name", "product_id")
+    def _onchange_get_l10n_ec_tax_support(self):
+        for line in self:
+            line.l10n_ec_tax_support = line._get_l10n_ec_tax_support()
+
+    def _get_l10n_ec_tax_support(self):
+        self.ensure_one()
+        if (
+            not self.l10n_ec_tax_support
+            and self.move_id
+            and self.move_id.l10n_ec_tax_support
+        ):
+            return self.move_id.l10n_ec_tax_support
+        return False
