@@ -2,13 +2,13 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
-class WizardCreateSaleWithhold(models.TransientModel):
+class WizardCreatePurchaseWithhold(models.TransientModel):
     _inherit = "l10n_ec.wizard.abstract.withhold"
-    _name = "l10n_ec.wizard.create.sale.withhold"
-    _description = "Wizard Sale withhold"
+    _name = "l10n_ec.wizard.create.purchase.withhold"
+    _description = "Wizard Purchase withhold"
 
     withhold_line_ids = fields.One2many(
-        comodel_name="l10n_ec.wizard.create.sale.withhold.line",
+        comodel_name="l10n_ec.wizard.create.purchase.withhold.line",
         inverse_name="withhold_id",
         string="Lines",
         required=True,
@@ -24,12 +24,12 @@ class WizardCreateSaleWithhold(models.TransientModel):
 
     def _prepare_withholding_vals(self):
         withholding_vals = super()._prepare_withholding_vals()
-        withholding_vals["l10n_ec_withholding_type"] = "sale"
+        withholding_vals["l10n_ec_withholding_type"] = "purchase"
         return withholding_vals
 
     def button_validate(self):
         """
-        Create a Sale Withholding and try reconcile with invoice
+        Create a purchase Withholding and try reconcile with invoice
         """
         self.ensure_one()
         if not self.withhold_line_ids:
@@ -50,10 +50,10 @@ class WizardCreateSaleWithhold(models.TransientModel):
                 0,
                 {
                     "partner_id": self.partner_id.id,
-                    "account_id": self.partner_id.property_account_receivable_id.id,
+                    "account_id": self.partner_id.property_account_payable_id.id,
                     "name": "RET " + str(self.document_number),
-                    "debit": 0.00,
-                    "credit": total_counter,
+                    "debit": total_counter,
+                    "credit": 0.0,
                 },
             )
         )
@@ -61,17 +61,17 @@ class WizardCreateSaleWithhold(models.TransientModel):
         withholding_vals.update({"line_ids": lines})
         new_withholding = self.env["account.move"].create(withholding_vals)
         new_withholding.post()
-        self._try_reconcile_withholding_moves(new_withholding, "receivable")
+        self._try_reconcile_withholding_moves(new_withholding, "payable")
         return True
 
 
-class WizardCreateSaleWithholdLine(models.TransientModel):
+class WizardPurchaseWithholdLine(models.TransientModel):
     _inherit = "l10n_ec.wizard.abstract.withhold.line"
-    _name = "l10n_ec.wizard.create.sale.withhold.line"
-    _description = "Wizard Sale withhold line"
+    _name = "l10n_ec.wizard.create.purchase.withhold.line"
+    _description = "Wizard Purchase withhold line"
 
     withhold_id = fields.Many2one(
-        comodel_name="l10n_ec.wizard.create.sale.withhold",
+        comodel_name="l10n_ec.wizard.create.purchase.withhold",
         string="Withhold",
         ondelete="cascade",
     )
