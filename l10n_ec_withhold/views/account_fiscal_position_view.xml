@@ -4,7 +4,7 @@
         <field name="model">account.fiscal.position</field>
         <field name="inherit_id" ref="l10n_ec_base.account_fiscal_position_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='l10n_ec_no_account']" position="after">
+            <xpath expr="//field[@name='company_id']" position="after">
                 <field name="l10n_ec_withhold"/>
             </xpath>
         </field>
