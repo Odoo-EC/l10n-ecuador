@@ -38,6 +38,12 @@ class AccountMove(models.Model):
         store=True,
     )
 
+    l10n_ec_withhold_vendor = fields.Boolean(
+        string=_("Withholds Vendor ?"),
+        compute="_compute_l10n_ec_withhold_vendor",
+        store=True,
+    )
+
     l10n_ec_tax_support = fields.Selection(
         TAX_SUPPORT,
         string=_('Tax Support'),
@@ -124,6 +130,22 @@ class AccountMove(models.Model):
         self.l10n_ec_tax_support = self._get_l10n_ec_tax_support()
         return super(AccountMove, self)._onchange_partner_id()
 
+    @api.depends("invoice_line_ids.tax_ids")
+    @api.onchange("invoice_line_ids.tax_ids")
+    def _compute_l10n_ec_withhold_vendor(self):
+        for move in self:
+            if move.move_type in move.get_purchase_types():
+                move.l10n_ec_withhold_vendor = move._get_l10n_ec_withhold_active()
+
+    def _get_l10n_ec_withhold_active(self):
+        self.ensure_one()
+        tax_ids = self.invoice_line_ids.mapped('tax_ids')
+        tax_group_ids = tax_ids.mapped('tax_group_id')
+        tax_group_required = self.env.ref('l10n_ec.tax_group_withhold_vat')
+        tax_group_required |= self.env.ref('l10n_ec.tax_group_withhold_income')
+        group_withhold = tax_group_ids.filtered(lambda x: x in tax_group_required)
+        return group_withhold
+
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -139,7 +161,7 @@ class AccountMoveLine(models.Model):
     l10n_ec_tax_support = fields.Selection(
         TAX_SUPPORT,
         string=_('Tax Support'),
-        required=True,
+        required=False,
         store=True,
         help=_('Tax support in invoice line')
     )
