@@ -146,9 +146,11 @@ class AccountMoveLine(models.Model):
 
     @api.onchange('name', 'product_id')
     def _onchange_get_l10n_ec_tax_support(self):
-        self.l10n_ec_tax_support = self._get_l10n_ec_tax_support()
+        for line in self:
+            line.l10n_ec_tax_support = line._get_l10n_ec_tax_support()
 
     def _get_l10n_ec_tax_support(self):
+        self.ensure_one()
         if not self.l10n_ec_tax_support and self.move_id and self.move_id.l10n_ec_tax_support:
             return self.move_id.l10n_ec_tax_support
         return False
