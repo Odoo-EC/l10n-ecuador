@@ -2,24 +2,9 @@ import logging
 
 from odoo import _, api, fields, models
 from odoo.tools.safe_eval import safe_eval
+from .data import TAX_SUPPORT
 
 _logger = logging.getLogger(__name__)
-
-SUSTENTO_TRIBUTARIO = [
-    ('00', 'No aplica'),
-    ('01', 'Crédito Tributario para declaración de IVA (servicios y bienes distintos de inventarios y activos fijos'),
-    ('02', 'Costo o Gasto para declaración de IR (servicios y bienes distintos de inventarios y activos fijos'),
-    ('03', 'Activo Fijo - Crédito Tributario para declaración de IVA'),
-    ('04', 'Activo Fijo - Costo o Gasto para declaración de IR'),
-    ('05', 'Liquidación Gastos de Viaje, hospedaje y alimentación Gastos IR (a nombre de empleados y no de la empresa'),
-    ('06', 'Inventario - Crédito Tributario para declaración de IVA'),
-    ('07', 'Inventario - Costo o Gasto para declaración de IR'),
-    ('08', 'Valor pagado para solicitar Reembolso de Gasto (intermediario)'),
-    ('09', 'Reembolso por Siniestros'),
-    ('10', 'Distribución de Dividendos, Beneficios o Utilidades'),
-    ('11', 'Convenios de débito o recaudación para IFI´s'),
-    ('12', 'Impuestos y retenciones presuntivos'),
-    ('13', 'Valores reconocidos por entidades del sector público a favor de sujetos pasivos')]
 
 
 class AccountMove(models.Model):
@@ -51,6 +36,12 @@ class AccountMove(models.Model):
         string="Withholds Count",
         compute="_compute_l10n_ec_withhold_active",
         store=True,
+    )
+
+    l10n_ec_tax_support = fields.Selection(
+        TAX_SUPPORT,
+        string=_('Tax Support'),
+        help=_('Tax support in invoice line')
     )
 
     def action_create_sale_withhold_wizard(self):
@@ -124,11 +115,14 @@ class AccountMove(models.Model):
         for move in self:
             move.l10n_ec_withhold_active = move.partner_id.l10n_ec_withhold_related
 
-    sustento_tributario = fields.Selection(
-        SUSTENTO_TRIBUTARIO,
-        string='Sustento Tributario',
-        help='Sustento tributario en linea de factura'
-    )
+    def _get_l10n_ec_tax_support(self):
+        self.ensure_one()
+        return self.partner_id.l10n_ec_tax_support
+
+    @api.onchange('partner_id')
+    def _onchange_partner_id(self):
+        self.l10n_ec_tax_support = self._get_l10n_ec_tax_support()
+        return super(AccountMove, self)._onchange_partner_id()
 
 
 class AccountMoveLine(models.Model):
@@ -142,8 +136,19 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
-    sustento_tributario = fields.Selection(
-        SUSTENTO_TRIBUTARIO,
-        string='Sustento Tributario',
-        help='Sustento tributario en linea de factura'
+    l10n_ec_tax_support = fields.Selection(
+        TAX_SUPPORT,
+        string=_('Tax Support'),
+        required=True,
+        store=True,
+        help=_('Tax support in invoice line')
     )
+
+    @api.onchange('name', 'product_id')
+    def _onchange_get_l10n_ec_tax_support(self):
+        self.l10n_ec_tax_support = self._get_l10n_ec_tax_support()
+
+    def _get_l10n_ec_tax_support(self):
+        if not self.l10n_ec_tax_support and self.move_id and self.move_id.l10n_ec_tax_support:
+            return self.move_id.l10n_ec_tax_support
+        return False
