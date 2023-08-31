@@ -16,8 +16,9 @@
                             options="{'no_create': True}"
                         />
                         <field name="document_number" />
-                        <field name="electronic_authorization" required="1"/>
+                        <field name="electronic_authorization" required="1" />
                         <field name="invoice_id" invisible="1" />
+                        <field name="invoice_ids" invisible="1" />
                     </group>
                 </group>
                 <notebook>
@@ -25,16 +26,20 @@
                             <field name="withhold_line_ids" colspan="4">
                                 <tree editable="bottom">
                                     <field
-                                        name="tax_group_withhold_id"
-                                        required="1"
-                                        options="{'no_create': True}"
-                                    />
+                                    name="invoice_id"
+                                    domain="[('id', 'in', parent.invoice_ids)]"
+                                />
+                                    <field
+                                    name="tax_group_withhold_id"
+                                    required="1"
+                                    options="{'no_create': True}"
+                                />
                                         <field
-                                        name="tax_withhold_id"
-                                        required="1"
-                                        options="{'no_create': True}"
-                                        domain="[('tax_group_id', '=', tax_group_withhold_id), ('type_tax_use', '=', 'sale')]"
-                                    />
+                                    name="tax_withhold_id"
+                                    required="1"
+                                    options="{'no_create': True}"
+                                    domain="[('tax_group_id', '=', tax_group_withhold_id), ('type_tax_use', '=', 'sale')]"
+                                />
                                     <field name="base_amount" />
                                     <field name="withhold_amount" />
                                 </tree>

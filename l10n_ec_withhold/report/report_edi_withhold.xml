@@ -8,23 +8,23 @@
                     <tr>
                         <td style="width: 60%">
                             <strong>Razón social / Nombres y Apellidos:</strong>
-                            <span t-field="partner.name"/>
+                            <span t-field="partner.name" />
                         </td>
                         <td>
                             <strong>Identificación:</strong>
-                            <span t-field="partner.vat"/>
+                            <span t-field="partner.vat" />
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <strong>Fecha de Emisión:</strong>
-                            <span t-field="o.date"/>
+                            <span t-field="o.date" />
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <br/>
+        <br />
         <table class="table table-sm table-bordered-black">
             <thead>
                 <tr style="font-size: 10px;">
@@ -32,7 +32,10 @@
                     <th name="th_cant" class="amount-sm">Número</th>
                     <th name="th_descrip" class="">Fecha emisión</th>
                     <th name="th_descrip" class="">Ejercicio Fiscal</th>
-                    <th name="th_punit" class="amount-sm">Base Imponible para la Retención</th>
+                    <th
+                        name="th_punit"
+                        class="amount-sm"
+                    >Base Imponible para la Retención</th>
                     <th name="th_dscto" class="amount-sm">IMPUESTO</th>
                     <th name="th_ptotal" class="amount-md">Porcentaje Retención</th>
                     <th name="th_ptotal" class="amount-md">Valor Retenido</th>
@@ -48,10 +51,10 @@
                             <span>001-003-000003106</span>
                         </td>
                         <td>
-                            <span t-field="o.date"/>
+                            <span t-field="o.date" />
                         </td>
                         <td>
-                            <span t-esc="o.date.strftime('%m/%Y')"/>
+                            <span t-esc="o.date.strftime('%m/%Y')" />
                         </td>
                         <td class="text-right">
                             <span
@@ -65,14 +68,10 @@
                             />
                         </td>
                         <td class="text-right">
-                            <span
-                                t-esc="abs(line.tax_line_id.amount)"
-                            />%
+                            <span t-esc="abs(line.tax_line_id.amount)" />%
                         </td>
                         <td class="text-right">
-                            <span
-                                t-esc="abs(line.balance)"
-                            />
+                            <span t-esc="abs(line.balance)" />
                         </td>
                     </tr>
                 </t>
