@@ -47,8 +47,27 @@ class AccountMove(models.Model):
         TAX_SUPPORT, string="Tax Support", help="Tax support in invoice line"
     )
 
+    @api.constrains("name", "journal_id", "state")
+    def _check_unique_sequence_number(self):
+        if (
+            self.l10n_latam_internal_type == "withhold"
+            and self.l10n_ec_journal_type == "sale"
+        ):
+            withhold = self.filtered(
+                lambda x: x.is_withhold() and x.l10n_latam_use_documents
+            )
+            return super(AccountMove, self - withhold)._check_unique_sequence_number()
+
+        return super(AccountMove, self)._check_unique_sequence_number()
+
+    @api.model
+    def get_withhold_types(self):
+        return ["entry"]
+
+    def is_withhold(self):
+        return self.move_type in self.get_withhold_types()
+
     def action_create_sale_withhold_wizard(self):
-        self.ensure_one()
         action = self.env.ref(
             "l10n_ec_withhold.l10n_ec_wizard_sale_withhold_action_window"
         ).read()[0]
@@ -62,13 +81,7 @@ class AccountMove(models.Model):
         ]
         ctx = safe_eval(action["context"])
         ctx.pop("default_type", False)
-        ctx.update(
-            {
-                "default_partner_id": self.partner_id.id,
-                "default_invoice_id": self.id,
-                "default_issue_date": self.invoice_date,
-            }
-        )
+        ctx.update(self.env.context.copy())
         action["context"] = ctx
         return action
 
@@ -107,8 +120,12 @@ class AccountMove(models.Model):
         }
         action["context"] = context
         action["name"] = _("Withholding")
-        view_tree_id = self.env.ref("l10n_ec_withhold.view_account_move_withhold_tree").id
-        view_form_id = self.env.ref("l10n_ec_withhold.view_account_move_withhold_form").id
+        view_tree_id = self.env.ref(
+            "l10n_ec_withhold.view_account_move_withhold_tree"
+        ).id
+        view_form_id = self.env.ref(
+            "l10n_ec_withhold.view_account_move_withhold_form"
+        ).id
         action["view_mode"] = "form"
         action["views"] = [(view_form_id, "form")]
         action["res_id"] = withhold_ids[0]
@@ -121,6 +138,7 @@ class AccountMove(models.Model):
 
     @api.depends("line_ids.l10n_ec_withhold_id", "line_ids")
     def _compute_l10n_ec_withhold_get(self):
+        # TODO to line invoice
         withhold_ids = (
             self.env["account.move"]
             .search([("invoice_origin", "=", self.id)])
@@ -135,8 +153,11 @@ class AccountMove(models.Model):
             self.l10n_ec_withhold_count = 0
             self.l10n_ec_withhold_ids = False
 
-    @api.depends("partner_id.property_account_position_id", "fiscal_position_id.l10n_ec_withhold",
-                 "company_id.property_account_position_id")
+    @api.depends(
+        "partner_id.property_account_position_id",
+        "fiscal_position_id.l10n_ec_withhold",
+        "company_id.property_account_position_id",
+    )
     def _compute_l10n_ec_withhold_active(self):
         for move in self:
             # En Ventas si la posición fiscal del cliente retiene
@@ -146,8 +167,9 @@ class AccountMove(models.Model):
                 and move.l10n_ec_withhold_active
                 and self.company_id.property_account_position_id
             ):
-                # En Compras si la posición fiscal retiene y el proveedor retiene, vemos si la compañía retiene
-                move.l10n_ec_withhold_active = self.company_id.property_account_position_id.l10n_ec_withhold
+                move.l10n_ec_withhold_active = (
+                    self.company_id.property_account_position_id.l10n_ec_withhold
+                )
 
     def _get_l10n_ec_tax_support(self):
         self.ensure_one()
@@ -174,6 +196,13 @@ class AccountMoveLine(models.Model):
         string="Tax Support",
         copy=False,
         help="Tax support in invoice line",
+    )
+
+    l10n_ec_invoice_withhold_id = fields.Many2one(
+        comodel_name="account.move",
+        string="Withhold",
+        readonly=True,
+        copy=False,
     )
 
     @api.onchange("name", "product_id")
