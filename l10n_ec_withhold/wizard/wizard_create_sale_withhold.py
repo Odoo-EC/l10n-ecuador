@@ -22,17 +22,16 @@ class WizardCreateSaleWithhold(models.TransientModel):
 
     @api.model
     def default_get(self, fields):
-
         defaults = super().default_get(fields)
-
         invoices = self.env["account.move"].browse(self.env.context.get("active_ids"))
-
         if len(invoices.partner_id) > 1:
             raise UserError(_("Choose a multiple invoices of a same customer"))
-
-        defaults["invoice_ids"] = [(6, 0, self.env.context.get("active_ids", []))]
+        if any(invoice.payment_state == "paid" for invoice in invoices):
+            raise UserError(
+                _("The selected invoice is paid or one of selected invoice is paid")
+            )
+        defaults["invoice_ids"] = [(6, 0, invoices.ids)]
         defaults["partner_id"] = invoices.partner_id.id
-
         return defaults
 
     @api.depends("withhold_line_ids.withhold_amount")
@@ -49,14 +48,23 @@ class WizardCreateSaleWithhold(models.TransientModel):
 
     @api.onchange("electronic_authorization")
     def onchange_authorization(self):
-        if self.electronic_authorization is not False:
+        if self.electronic_authorization:
             if len(self.electronic_authorization) == 49:
-                self.issue_date = self.extract_date_from_authorization()
-                self.document_number = self.extract_document_number_from_authorization()
+                if self.electronic_authorization[8:10] == "07":
+                    self.issue_date = self.extract_date_from_authorization()
+                    self.document_number = (
+                        self.extract_document_number_from_authorization()
+                    )
+                else:
+                    raise UserError(
+                        _("Authorization number not correspond to a withhold")
+                    )
+
+            self.validate_authorization()
 
     @api.onchange("document_number")
     def onchange_document_number(self):
-        if self.document_number is not False:
+        if self.document_number:
             self.document_number = self._format_document_number(self.document_number)
 
     def _format_document_number(self, document_number):
@@ -85,7 +93,12 @@ class WizardCreateSaleWithhold(models.TransientModel):
     def validate_repeated_invoice(self):
         for line in self.withhold_line_ids:
             result = self.env["account.move.line"].search(
-                [("l10n_ec_invoice_withhold_id", "=", line.invoice_id.id)]
+                [
+                    ("l10n_ec_invoice_withhold_id", "=", line.invoice_id.id),
+                    ("move_id.l10n_ec_withholding_type", "=", "sale"),
+                    ("move_id.l10n_latam_internal_type", "=", "withhold"),
+                ],
+                limit=1,
             )
             if len(result) > 0:
                 raise UserError(
@@ -94,6 +107,38 @@ class WizardCreateSaleWithhold(models.TransientModel):
                         f"{result.move_id.name}"
                     )
                 )
+
+    def validate_repeated_withhold(self):
+        withhold_count = self.env["account.move"].search_count(
+            [
+                ("partner_id", "=", self.partner_id.id),
+                ("name", "=", f"RET {self.document_number}"),
+                ("l10n_ec_withholding_type", "=", "sale"),
+                ("l10n_latam_internal_type", "=", "withhold"),
+            ]
+        )
+        if withhold_count > 0:
+            raise UserError(_(f"Withhold {self.document_number} already exist"))
+
+    def validate_selected_invoices(self):
+        if len(self.withhold_line_ids.invoice_id) != len(self.invoice_ids):
+            raise UserError(_("Withhold not content selected invoices"))
+
+    def validate(self):
+        if not self.withhold_line_ids:
+            raise UserError(_("Please add some withholding lines before continue"))
+        for invoice in self.invoice_ids:
+            if self.issue_date < invoice.invoice_date:
+                raise UserError(
+                    _(
+                        f"Withhold date: {self.issue_date} "
+                        f"should be equal or major that invoice date: {invoice.invoice_date}"
+                    )
+                )
+        self.validate_selected_invoices()
+        self.validate_authorization()
+        self.validate_repeated_withhold()
+        self.validate_repeated_invoice()
 
     def extract_date_from_authorization(self):
         return datetime.datetime.strptime(
@@ -111,10 +156,7 @@ class WizardCreateSaleWithhold(models.TransientModel):
         Create a Sale Withholding and try reconcile with invoice
         """
         self.ensure_one()
-        self.validate_authorization()
-        self.validate_repeated_invoice()
-        if not self.withhold_line_ids:
-            raise UserError(_("Please add some withholding lines before continue"))
+        self.validate()
 
         withholding_vals = self._prepare_withholding_vals()
         total_counter = 0
