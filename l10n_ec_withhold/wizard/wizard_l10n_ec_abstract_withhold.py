@@ -36,17 +36,15 @@ class WizardAbstractWithhold(models.AbstractModel):
             "date": self.issue_date,
             "l10n_ec_electronic_authorization": self.electronic_authorization,
             "move_type": "entry",
-            "invoice_origin": self.invoice_id.id,
             "l10n_latam_document_type_id": self.env.ref("l10n_ec_withhold.ec_dt_07").id,
             "partner_id": self.partner_id.id,
         }
 
-    def _try_reconcile_withholding_moves(self, withholding, account_type):
+    def _try_reconcile_withholding_moves(self, withholding, invoices, account_type):
         assert account_type in ["receivable", "payable"], _(
             "Account type not supported, this must be receivable or payable"
         )
-        # TODO update self.invoice_id to self.line_id_invoice
-        aml_to_reconcile = self.invoice_id.line_ids.filtered(
+        aml_to_reconcile = invoices.line_ids.filtered(
             lambda l: l.account_id.internal_type == account_type
         )
         aml_to_reconcile += withholding.line_ids.filtered(
@@ -85,16 +83,10 @@ class WizardAbstractWithholdLine(models.AbstractModel):
     def _compute_withholding_amount(self):
         for line in self:
             line.base_amount = 0.0
-            withhold = self.withhold_id
-
             if line.tax_withhold_id.tax_group_id.l10n_ec_type == "withhold_income_tax":
-                for rec in withhold.invoice_ids:
-                    if line.invoice_id.name == rec.name:
-                        line.base_amount = abs(rec.amount_untaxed_signed)
+                line.base_amount = abs(line.invoice_id.amount_untaxed_signed)
             elif line.tax_withhold_id.tax_group_id.l10n_ec_type == "withhold_vat":
-                for rec in withhold.invoice_ids:
-                    if line.invoice_id.name == rec.name:
-                        line.base_amount = abs(rec.amount_tax_signed)
+                line.base_amount = abs(line.invoice_id.amount_tax_signed)
 
             line.withhold_amount = abs(
                 line.base_amount * line.tax_withhold_id.amount / 100
@@ -115,9 +107,9 @@ class WizardAbstractWithholdLine(models.AbstractModel):
 
     def _prepare_amount_vals(self, wizard, tax_data):
         debit = credit = 0.0
-        if wizard.invoice_id.move_type == "out_invoice":
+        if self.invoice_id.move_type == "out_invoice":
             debit = abs(self.withhold_amount)
-        if wizard.invoice_id.move_type == "in_invoice":
+        if self.invoice_id.move_type == "in_invoice":
             credit = abs(self.withhold_amount)
 
         return {
@@ -136,9 +128,9 @@ class WizardAbstractWithholdLine(models.AbstractModel):
 
     def _prepare_basis_vals(self, wizard, tax_data):
         debit = credit = 0.0
-        if wizard.invoice_id.move_type == "out_invoice":
+        if self.invoice_id.move_type == "out_invoice":
             debit = abs(tax_data.get("base"))
-        if wizard.invoice_id.move_type == "in_invoice":
+        if self.invoice_id.move_type == "in_invoice":
             credit = abs(tax_data.get("base"))
         return {
             "partner_id": wizard.partner_id.id,
@@ -154,9 +146,9 @@ class WizardAbstractWithholdLine(models.AbstractModel):
 
     def _prepare_basis_counterpart_vals(self, wizard, tax_data):
         debit = credit = 0.0
-        if wizard.invoice_id.move_type == "out_invoice":
+        if self.invoice_id.move_type == "out_invoice":
             credit = abs(tax_data.get("base"))
-        if wizard.invoice_id.move_type == "in_invoice":
+        if self.invoice_id.move_type == "in_invoice":
             debit = abs(tax_data.get("base"))
         return {
             "partner_id": wizard.partner_id.id,
