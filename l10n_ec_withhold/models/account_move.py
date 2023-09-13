@@ -31,6 +31,7 @@ class AccountMove(models.Model):
         column2="withhold_id",
         string="Withhold",
         readonly=True,
+        copy=False,
     )
 
     l10n_ec_withhold_count = fields.Integer(
