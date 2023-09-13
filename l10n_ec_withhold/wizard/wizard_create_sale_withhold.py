@@ -95,6 +95,31 @@ class WizardCreateSaleWithhold(models.TransientModel):
                     )
                 )
 
+    def validate_repeated_withhold(self):
+        result = self.env["account.move"].search(
+            [
+                ("partner_id", "=", self.partner_id.id),
+                ("name", "=", f"RET {self.document_number}"),
+                ("l10n_ec_withholding_type", "=", "sale"),
+                ("l10n_latam_internal_type", "=", "withhold"),
+                ("l10n_ec_journal_type", "=", "sale"),
+            ]
+        )
+        if len(result) > 0:
+            raise UserError(_(f"Withhold {self.document_number} already exist"))
+
+    def validate(self):
+        withhold_date = self.issue_date.strftime("%Y-%m-%d")
+        invoice_date = self.invoice_ids.invoice_date.strftime("%Y-%m-%d")
+        if withhold_date < invoice_date:
+            raise UserError(
+                _("Withhold date should be equal or major that invoice date")
+            )
+
+        self.validate_authorization()
+        self.validate_repeated_withhold()
+        self.validate_repeated_invoice()
+
     def extract_date_from_authorization(self):
         return datetime.datetime.strptime(
             self.electronic_authorization[0:8], "%d%m%Y"
@@ -111,8 +136,7 @@ class WizardCreateSaleWithhold(models.TransientModel):
         Create a Sale Withholding and try reconcile with invoice
         """
         self.ensure_one()
-        self.validate_authorization()
-        self.validate_repeated_invoice()
+        self.validate()
         if not self.withhold_line_ids:
             raise UserError(_("Please add some withholding lines before continue"))
 
