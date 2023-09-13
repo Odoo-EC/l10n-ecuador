@@ -85,7 +85,12 @@ class WizardCreateSaleWithhold(models.TransientModel):
     def validate_repeated_invoice(self):
         for line in self.withhold_line_ids:
             result = self.env["account.move.line"].search(
-                [("l10n_ec_invoice_withhold_id", "=", line.invoice_id.id)]
+                [
+                    ("l10n_ec_invoice_withhold_id", "=", line.invoice_id.id),
+                    ("move_id.l10n_ec_withholding_type", "=", "sale"),
+                    ("move_id.l10n_latam_internal_type", "=", "withhold"),
+                    ("move_id.l10n_ec_journal_type", "=", "sale"),
+                ]
             )
             if len(result) > 0:
                 raise UserError(
