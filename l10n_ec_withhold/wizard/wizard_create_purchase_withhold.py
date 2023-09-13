@@ -61,7 +61,9 @@ class WizardCreatePurchaseWithhold(models.TransientModel):
         withholding_vals.update({"line_ids": lines})
         new_withholding = self.env["account.move"].create(withholding_vals)
         new_withholding.post()
-        self._try_reconcile_withholding_moves(new_withholding, "payable")
+        invoices = self.withhold_line_ids.invoice_id
+        invoices.write({"l10n_ec_withhold_ids": [(4, new_withholding.id)]})
+        self._try_reconcile_withholding_moves(new_withholding, invoices, "payable")
         return True
 
 

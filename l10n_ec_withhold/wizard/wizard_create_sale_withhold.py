@@ -135,7 +135,7 @@ class WizardCreateSaleWithhold(models.TransientModel):
                     "account_id": self.partner_id.property_account_receivable_id.id,
                     "name": "RET " + str(self.document_number),
                     "debit": 0.00,
-                    "credit": 0.00,  # total_counter,
+                    "credit": total_counter,
                 },
             )
         )
@@ -143,7 +143,9 @@ class WizardCreateSaleWithhold(models.TransientModel):
         withholding_vals.update({"line_ids": lines})
         new_withholding = self.env["account.move"].create(withholding_vals)
         new_withholding.action_post()
-        self._try_reconcile_withholding_moves(new_withholding, "receivable")
+        invoices = self.withhold_line_ids.invoice_id
+        invoices.write({"l10n_ec_withhold_ids": [(4, new_withholding.id)]})
+        self._try_reconcile_withholding_moves(new_withholding, invoices, "receivable")
         return True
 
 
