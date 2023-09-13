@@ -34,7 +34,7 @@ class AccountMove(models.Model):
     )
 
     l10n_ec_withhold_count = fields.Integer(
-        string="Withholds Count", compute="_compute_l10n_ec_withhold_get"
+        string="Withholds Count", compute="_compute_l10n_ec_withhold_count"
     )
 
     l10n_ec_withhold_active = fields.Boolean(
@@ -136,22 +136,10 @@ class AccountMove(models.Model):
 
         return action
 
-    @api.depends("line_ids.l10n_ec_withhold_id", "line_ids")
-    def _compute_l10n_ec_withhold_get(self):
-        # TODO to line invoice
-        withhold_ids = (
-            self.env["account.move"]
-            .search([("invoice_origin", "=", self.id)])
-            .mapped("id")
-        )
-        lines_inv = self.env["account.move"].search([("invoice_origin", "=", self.id)])
-        if lines_inv:
-            lines_inv_mapped = lines_inv.mapped("id")
-            self.l10n_ec_withhold_count = len(lines_inv_mapped)
-            self.write({"l10n_ec_withhold_ids": [(6, 0, withhold_ids)]})
-        else:
-            self.l10n_ec_withhold_count = 0
-            self.l10n_ec_withhold_ids = False
+    @api.depends("l10n_ec_withhold_ids")
+    def _compute_l10n_ec_withhold_count(self):
+        for move in self:
+            move.l10n_ec_withhold_count = len(move.l10n_ec_withhold_ids)
 
     @api.depends(
         "partner_id.property_account_position_id",
