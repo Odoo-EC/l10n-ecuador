@@ -45,16 +45,20 @@
                 <t t-foreach="o.l10n_ec_withhold_line_ids" t-as="line">
                     <tr style="font-size: 9px;">
                         <td>
-                            <span>Factura</span>
+                            <span
+                                t-field="line.l10n_ec_invoice_withhold_id.l10n_latam_document_type_id.report_name"
+                            />
                         </td>
                         <td>
-                            <span>001-003-000003106</span>
+                            <span
+                                t-field="line.l10n_ec_invoice_withhold_id.l10n_latam_document_number"
+                            />
                         </td>
                         <td>
                             <span t-field="o.date" />
                         </td>
                         <td>
-                            <span t-esc="o.date.strftime('%m/%Y')" />
+                            <span t-out="o.date.strftime('%m/%Y')" />
                         </td>
                         <td class="text-right">
                             <span
@@ -68,10 +72,10 @@
                             />
                         </td>
                         <td class="text-right">
-                            <span t-esc="abs(line.tax_line_id.amount)" />%
+                            <span t-out="abs(line.tax_line_id.amount)" />%
                         </td>
                         <td class="text-right">
-                            <span t-esc="abs(line.balance)" />
+                            <span t-out="abs(line.balance)" />
                         </td>
                     </tr>
                 </t>
