@@ -135,22 +135,6 @@ class TestL10nECEdiCommon(AccountEdiTestCommon, TestL10nECCommon):
             invoice.action_post()
         return invoice
 
-    def _l10n_ec_test_generate_access_key(self, edi_doc):
-        """Genera y devuelve una clave de acceso
-        :param edi_doc: Edi document para obtener los datos"""
-        environment = edi_doc._l10n_ec_get_environment()
-        document_code_sri = edi_doc._l10n_ec_get_edi_code_sri()
-        document_number = edi_doc._l10n_ec_get_edi_number().replace("-", "")
-        date_document = edi_doc._l10n_ec_get_edi_date()
-        access_key = edi_doc.l10n_ec_generate_access_key(
-            document_code_sri=document_code_sri,
-            complete_document_number=document_number,
-            environment=environment,
-            date_document=date_document,
-            company=self.company,
-        )
-        return access_key
-
     def _get_response_with_auth(self, edi_doc):
         """
         simular la respuesta del SRI como si el documento se haya autorizado
@@ -168,19 +152,6 @@ class TestL10nECEdiCommon(AccountEdiTestCommon, TestL10nECCommon):
                     )
                 ]
             },
-        }
-
-    def _get_response_without_auth(self, edi_doc):
-        """
-        simular la respuesta del SRI donde no se obtenga autorizacion
-        """
-        # mandar a generar el xml para poder adjuntarlo a la respuesta del SRI
-        xml_file = edi_doc._l10n_ec_render_xml_edi()
-        self.company.l10n_ec_key_type_id.action_sign(xml_file)
-        return {
-            "claveAccesoConsultada": edi_doc.l10n_ec_xml_access_key,
-            "numeroComprobantes": 1,
-            "autorizaciones": {},
         }
 
     def _get_default_response_auth(self, access_key, xml_file):

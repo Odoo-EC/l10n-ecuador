@@ -101,18 +101,6 @@ class TestL10nECCommon(AccountTestInvoicingCommon):
             }
         )
 
-    def _l10n_ec_edi_company_no_account(self):
-        """Cambiar tipo de contribuyente, compañia no
-        obligada a llevar contabilidad, no validar impuestos de retenciones"""
-        not_required_accounting = (
-            self.env["account.fiscal.position"]
-            .with_company(self.company_data["company"])
-            .search([("name", "like", "Persona natural no obligadas")])
-        )
-        self.partner_contact.write(
-            {"property_account_position_id": not_required_accounting.id}
-        )
-
     def _l10n_ec_create_form_move(
         self,
         move_type,
