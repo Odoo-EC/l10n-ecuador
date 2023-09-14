@@ -1,4 +1,6 @@
 from odoo.tests import tagged
+from odoo.tests.common import Form
+from odoo.exceptions import AccessError, UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -56,3 +58,27 @@ class TestL10nInvoice(TestL10nECEdiCommon):
 
         self.assertEqual(invoice.state, "posted")
         self.assertTrue(edi_doc.l10n_ec_xml_access_key)
+
+        wizard = Form(self.env['l10n_ec.wizard.create.sale.withhold'].with_context({
+            'active_ids': invoice.ids
+        }))
+        self.assertEqual(wizard.partner_id, partner)
+
+        wizard.issue_date = invoice.invoice_date
+        wizard.journal_id = invoice.journal_id
+        wizard.electronic_authorization = '1111111111'
+        wizard.document_number = '1-1-1'
+        self.assertEqual(wizard.document_number, '001-001-000000001')
+
+        print('*** ***')
+        print(len(wizard.withhold_line_ids))
+        wizard.button_validate()
+        # with self.assertRaises(UserError):
+        #      wizard.button_validate
+        # _logger.warning(wizard.state)
+
+
+
+
+
+
