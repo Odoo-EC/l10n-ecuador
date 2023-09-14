@@ -113,14 +113,30 @@ class WizardCreateSaleWithhold(models.TransientModel):
         if len(result) > 0:
             raise UserError(_(f"Withhold {self.document_number} already exist"))
 
-    def validate(self):
-        withhold_date = self.issue_date.strftime("%Y-%m-%d")
-        invoice_date = self.invoice_ids.invoice_date.strftime("%Y-%m-%d")
-        if withhold_date < invoice_date:
-            raise UserError(
-                _("Withhold date should be equal or major that invoice date")
-            )
+    def validate_selected_invoices(self):
+        line_invoices = []
+        for withhold_line in self.withhold_line_ids:
+            line_invoices.append(withhold_line.invoice_id.name)
+        invoices = []
+        for invoice in self.invoice_ids:
+            invoices.append(invoice.name)
 
+        if set(line_invoices) != set(invoices):
+            raise UserError(_("Withhold not content selected invoices"))
+
+    def validate(self):
+        if not self.withhold_line_ids:
+            raise UserError(_("Please add some withholding lines before continue"))
+
+        withhold_date = self.issue_date.strftime("%Y-%m-%d")
+        for invoice in self.invoice_ids:
+            invoice_date = invoice.invoice_date.strftime("%Y-%m-%d")
+            if withhold_date < invoice_date:
+                raise UserError(
+                    _("Withhold date should be equal or major that invoice date")
+                )
+
+        self.validate_selected_invoices()
         self.validate_authorization()
         self.validate_repeated_withhold()
         self.validate_repeated_invoice()
@@ -142,8 +158,6 @@ class WizardCreateSaleWithhold(models.TransientModel):
         """
         self.ensure_one()
         self.validate()
-        if not self.withhold_line_ids:
-            raise UserError(_("Please add some withholding lines before continue"))
 
         withholding_vals = self._prepare_withholding_vals()
         total_counter = 0
