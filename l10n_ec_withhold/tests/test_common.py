@@ -195,4 +195,3 @@ class TestL10nECCommon(AccountTestInvoicingCommon):
         if auto_post:
             invoice.action_post()
         return invoice
-

@@ -1,11 +1,9 @@
+import logging
+from unittest.mock import patch
+
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import Form
-from odoo.exceptions import AccessError, UserError
-import logging
-
-_logger = logging.getLogger(__name__)
-
-from unittest.mock import patch
 
 from odoo.addons.l10n_ec_account_edi.models.account_edi_document import (
     AccountEdiDocument,
@@ -14,11 +12,13 @@ from odoo.addons.l10n_ec_account_edi.models.account_edi_format import AccountEdi
 
 from .test_edi_common import TestL10nECEdiCommon
 
+_logger = logging.getLogger(__name__)
+
 
 @tagged("post_install_l10n", "post_install", "-at_install", "invoice")
 class TestL10nInvoice(TestL10nECEdiCommon):
     def test_l10n_ec_invoice(self):
-        _logger.warning('*** test_l10n_ec_invoice ***')
+        _logger.warning("*** test_l10n_ec_invoice ***")
 
         def mock_l10n_ec_edi_zeep_client(edi_doc_instance, environment, url_type):
             return self._zeep_client_ws_sri()
@@ -59,26 +59,29 @@ class TestL10nInvoice(TestL10nECEdiCommon):
         self.assertEqual(invoice.state, "posted")
         self.assertTrue(edi_doc.l10n_ec_xml_access_key)
 
-        wizard = Form(self.env['l10n_ec.wizard.create.sale.withhold'].with_context({
-            'active_ids': invoice.ids
-        }))
+        wizard = Form(
+            self.env["l10n_ec.wizard.create.sale.withhold"].with_context(
+                **{"active_ids": invoice.ids}
+            )
+        )
         self.assertEqual(wizard.partner_id, partner)
 
         wizard.issue_date = invoice.invoice_date
         wizard.journal_id = invoice.journal_id
-        wizard.electronic_authorization = '1111111111'
-        wizard.document_number = '1-1-1'
-        self.assertEqual(wizard.document_number, '001-001-000000001')
+        wizard.electronic_authorization = "1111111111"
+        wizard.document_number = "1-1-1"
+        self.assertEqual(wizard.document_number, "001-001-000000001")
 
-        print('*** ***')
-        print(len(wizard.withhold_line_ids))
-        wizard.button_validate()
-        # with self.assertRaises(UserError):
-        #      wizard.button_validate
-        # _logger.warning(wizard.state)
+        with self.assertRaises(UserError):
+            wizard.save().button_validate()
 
+        _logger.warning("*** ***")
+        _logger.warning(len(wizard.withhold_line_ids))
 
+        for invoice in wizard.invoice_ids:
+            _logger.warning(invoice)
+            _logger.warning(invoice.id)
 
-
-
-
+        # with wizard.withhold_line_ids.new() as ml:
+        #     for invoice in wizard.invoice_ids:
+        #         ml.invoice_id = invoice.id
