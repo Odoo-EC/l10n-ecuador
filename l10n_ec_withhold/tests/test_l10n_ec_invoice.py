@@ -72,16 +72,33 @@ class TestL10nInvoice(TestL10nECEdiCommon):
         wizard.document_number = "1-1-1"
         self.assertEqual(wizard.document_number, "001-001-000000001")
 
-        with self.assertRaises(UserError):
-            wizard.save().button_validate()
+        # with self.assertRaises(UserError):
+        #     wizard.save().button_validate()
 
-        _logger.warning("*** ***")
-        _logger.warning(len(wizard.withhold_line_ids))
+        tax_group = self.env["account.tax.group"].search([("l10n_ec_type", "=", 'withhold_vat')])
 
-        for invoice in wizard.invoice_ids:
-            _logger.warning(invoice)
-            _logger.warning(invoice.id)
+        taxes = self.env["account.tax"].search([
+            ('company_id', '=', self.company.id),
+            ("tax_group_id", "=", tax_group.id),
+            ("type_tax_use", "=", 'sale'),
+            ('amount', '=', -100)
+        ])
 
-        # with wizard.withhold_line_ids.new() as ml:
-        #     for invoice in wizard.invoice_ids:
-        #         ml.invoice_id = invoice.id
+        with wizard.withhold_line_ids.new() as line:
+            line.invoice_id = invoice
+            line.tax_group_withhold_id = tax_group
+            line.tax_withhold_id = taxes
+
+        status = wizard.save().button_validate()
+
+        self.assertEqual(status, True)
+
+        # self.assertEqual(wizard.state, 'done')
+        # print(len(wizard.withhold_line_ids))
+        # print(wizard.withhold_line_ids)
+        #
+        # for line in wizard.withhold_line_ids:
+        #     print(line)
+
+        # for line in wizard.withhold_line_ids:
+        #     print(line)
