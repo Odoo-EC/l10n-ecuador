@@ -1,6 +1,8 @@
 import logging
 from unittest.mock import patch
 
+from dateutil.relativedelta import relativedelta
+
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import Form
@@ -145,9 +147,33 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
 
         wizard.issue_date = invoice.invoice_date
         wizard.journal_id = invoice.journal_id
-        wizard.electronic_authorization = "1111111111"
-        wizard.document_number = "1-1-1"
-        self.assertEqual(wizard.document_number, "001-001-000000001")
+        wizard.electronic_authorization = "1234567890"
+        with self.assertRaises(UserError):
+            wizard.document_number = "1"
+
+        # with self.assertRaises(UserError):
+        #     wizard.save().button_validate()
+
+        tax_group = self.env["account.tax.group"].search(
+            [("l10n_ec_type", "=", "withhold_vat")]
+        )
+
+        taxes = self.env["account.tax"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("tax_group_id", "=", tax_group.id),
+                ("type_tax_use", "=", "sale"),
+                ("amount", "=", -100),
+            ]
+        )
+
+        with wizard.withhold_line_ids.new() as line:
+            line.invoice_id = invoice
+            line.tax_group_withhold_id = tax_group
+            line.tax_withhold_id = taxes
+
+        wizard.electronic_authorization = "1"
+        wizard.issue_date = invoice.invoice_date - relativedelta(days=1)
 
         with self.assertRaises(UserError):
             wizard.save().button_validate()
