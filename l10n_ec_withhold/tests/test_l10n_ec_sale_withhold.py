@@ -94,10 +94,4 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
         status = wizard.save().button_validate()
 
         self.assertEqual(status, True)
-
-        # self.assertEqual(wizard.state, 'done')
-        # print(len(wizard.withhold_line_ids))
-        # print(wizard.withhold_line_ids)
-        #
-        # for line in wizard.withhold_line_ids:
-        #     print(line)
+        #TODO Test withhold in account move
