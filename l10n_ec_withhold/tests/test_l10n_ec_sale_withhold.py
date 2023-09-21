@@ -1,7 +1,6 @@
 import logging
 from unittest.mock import patch
 
-from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import Form
 
@@ -9,14 +8,13 @@ from odoo.addons.l10n_ec_account_edi.models.account_edi_document import (
     AccountEdiDocument,
 )
 from odoo.addons.l10n_ec_account_edi.models.account_edi_format import AccountEdiFormat
-
-from .test_edi_common import TestL10nECEdiCommon
+from odoo.addons.l10n_ec_account_edi.tests.test_edi_common import TestL10nECEdiCommon
 
 _logger = logging.getLogger(__name__)
 
 
 @tagged("post_install_l10n", "post_install", "-at_install", "invoice")
-class TestL10nInvoice(TestL10nECEdiCommon):
+class TestL10nSaleWithhold(TestL10nECEdiCommon):
     def test_l10n_ec_invoice(self):
         _logger.warning("*** test_l10n_ec_invoice ***")
 
@@ -31,7 +29,7 @@ class TestL10nInvoice(TestL10nECEdiCommon):
         ):
             return self._get_response_reception_received()
 
-        partner = self.partner
+        partner = self.partner_with_email
         self._setup_edi_company_ec()
         invoice = self._l10n_ec_prepare_edi_out_invoice(
             partner=partner, auto_post=False
@@ -75,14 +73,18 @@ class TestL10nInvoice(TestL10nECEdiCommon):
         # with self.assertRaises(UserError):
         #     wizard.save().button_validate()
 
-        tax_group = self.env["account.tax.group"].search([("l10n_ec_type", "=", 'withhold_vat')])
+        tax_group = self.env["account.tax.group"].search(
+            [("l10n_ec_type", "=", "withhold_vat")]
+        )
 
-        taxes = self.env["account.tax"].search([
-            ('company_id', '=', self.company.id),
-            ("tax_group_id", "=", tax_group.id),
-            ("type_tax_use", "=", 'sale'),
-            ('amount', '=', -100)
-        ])
+        taxes = self.env["account.tax"].search(
+            [
+                ("company_id", "=", self.company.id),
+                ("tax_group_id", "=", tax_group.id),
+                ("type_tax_use", "=", "sale"),
+                ("amount", "=", -100),
+            ]
+        )
 
         with wizard.withhold_line_ids.new() as line:
             line.invoice_id = invoice
@@ -97,8 +99,5 @@ class TestL10nInvoice(TestL10nECEdiCommon):
         # print(len(wizard.withhold_line_ids))
         # print(wizard.withhold_line_ids)
         #
-        # for line in wizard.withhold_line_ids:
-        #     print(line)
-
         # for line in wizard.withhold_line_ids:
         #     print(line)
