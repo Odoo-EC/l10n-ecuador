@@ -222,6 +222,8 @@ class AccountMove(models.Model):
                 and move.l10n_ec_withhold_active
                 and self.company_id.property_account_position_id
             ):
+                # En Compras si la posición fiscal retiene y el proveedor retiene,
+                # vemos si la compañía retiene
                 move.l10n_ec_withhold_active = (
                     self.company_id.property_account_position_id.l10n_ec_withhold
                 )

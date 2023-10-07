@@ -10,6 +10,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/l10n_latam.document.type.csv",
+        "data/edi_withhold.xml",
         "wizard/wizard_create_sale_withhold_view.xml",
         "wizard/wizard_create_purchase_withhold_view.xml",
         "views/res_partner_view.xml",
@@ -21,4 +22,5 @@
     ],
     "installable": True,
     "auto_install": False,
+    "post_init_hook": "_l10n_ec_withhold_post_init",
 }
