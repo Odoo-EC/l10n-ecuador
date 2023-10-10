@@ -48,6 +48,7 @@ def convert_key_cer_to_pem(key, password):
 class SriKeyType(models.Model):
     _name = "sri.key.type"
     _description = "Type of electronic key"
+    _inherit = ["mail.thread", "mail.activity.mixin"]
 
     name = fields.Char(size=255, required=True, readonly=False)
     file_content = fields.Binary(string="Signature File", readonly=True, states=STATES)
@@ -78,6 +79,8 @@ class SriKeyType(models.Model):
         string="Serial number (certificate)", readonly=True
     )
     cert_version = fields.Char(string="Version", readonly=True)
+    days_for_notification = fields.Integer(string="Days for notification", default=30)
+    user_ids = fields.Many2many("res.users", string="Users")
 
     @tools.ormcache("self.file_content", "self.password", "self.state")
     def _decode_certificate(self):
@@ -228,3 +231,37 @@ class SriKeyType(models.Model):
         ctx.sign(signature)
         ctx.verify(signature)
         return etree.tostring(doc, encoding="UTF-8", pretty_print=True).decode()
+
+    def _days_to_expire(self):
+        self.ensure_one()
+        if self.expire_date:
+            return (self.expire_date - fields.Date.today()).days
+        return 0
+
+    def action_send_notification(self):
+        odoobot = self.env.ref("base.partner_root")
+        message_body = _("The certificate is is next to expire")
+        users = self.user_ids
+
+        if users:
+            if self._days_to_expire() <= self.days_for_notification:
+                self.message_post(
+                    body=message_body,
+                    author_id=odoobot.id,
+                    partner_ids=users.partner_id.ids,
+                    subject=_("Certificate is next to expire"),
+                    subtype_xmlid="mail.mt_comment",
+                )
+            else:
+                return {
+                    "type": "ir.actions.client",
+                    "tag": "display_notification",
+                    "params": {
+                        "type": "warning",
+                        "message": _(
+                            "According to the days for notification. "
+                            "No need to send notification"
+                        ),
+                        "sticky": False,
+                    },
+                }
