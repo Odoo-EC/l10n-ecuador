@@ -16,3 +16,19 @@ class TestL10nCheckCertificate(TestL10nECEdiCommon):
 
         result = cron_tasks.method_direct_trigger()
         self.assertTrue(result)
+
+    def test_l10n_ec_check_certificate_with_users(self):
+        """Test that the cron task is executed correctly with users."""
+        self._setup_edi_company_ec()
+
+        cron_tasks = self.env.ref(
+            "l10n_ec_account_edi.ir_cron_check_certificate", False
+        )
+
+        certificates = self.env["sri.key.type"].search([])
+        for certificate in certificates:
+            users = self.env["res.users"].search([])
+            certificate.write({"user_ids": users.ids})
+
+        result = cron_tasks.method_direct_trigger()
+        self.assertTrue(result)
