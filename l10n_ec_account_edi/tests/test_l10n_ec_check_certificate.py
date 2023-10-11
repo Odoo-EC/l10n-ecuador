@@ -28,7 +28,7 @@ class TestL10nCheckCertificate(TestL10nECEdiCommon):
         certificates = self.env["sri.key.type"].search([])
         for certificate in certificates:
             users = self.env["res.users"].search([])
-            certificate.write({"user_ids": users.ids})
+            certificate.write({"user_ids": users.ids, "days_for_notification": 1000})
 
         result = cron_tasks.method_direct_trigger()
         self.assertTrue(result)
