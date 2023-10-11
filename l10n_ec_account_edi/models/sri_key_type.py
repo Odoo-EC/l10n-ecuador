@@ -232,36 +232,47 @@ class SriKeyType(models.Model):
         ctx.verify(signature)
         return etree.tostring(doc, encoding="UTF-8", pretty_print=True).decode()
 
-    def _days_to_expire(self):
-        self.ensure_one()
-        if self.expire_date:
-            return (self.expire_date - fields.Date.today()).days
+    def days_to_expire(self, certificate):
+        if certificate.expire_date:
+            return (certificate.expire_date - fields.Date.today()).days
         return 0
 
     def action_send_notification(self):
         odoobot = self.env.ref("base.partner_root")
-        message_body = _("The certificate is is next to expire")
-        users = self.user_ids
+        certificates = self.env["sri.key.type"].search([])
+        is_send = False
 
-        if users:
-            if self._days_to_expire() <= self.days_for_notification:
-                self.message_post(
-                    body=message_body,
-                    author_id=odoobot.id,
-                    partner_ids=users.partner_id.ids,
-                    subject=_("Certificate is next to expire"),
-                    subtype_xmlid="mail.mt_comment",
-                )
-            else:
-                return {
-                    "type": "ir.actions.client",
-                    "tag": "display_notification",
-                    "params": {
-                        "type": "warning",
-                        "message": _(
-                            "According to the days for notification. "
-                            "No need to send notification"
-                        ),
-                        "sticky": False,
-                    },
-                }
+        for certificate in certificates:
+            users = certificate.user_ids
+            if users:
+                if (
+                    self.days_to_expire(certificate)
+                    <= certificate.days_for_notification
+                ):
+                    message_body = _(
+                        f"The certificate {certificate.name} is next to expire"
+                    )
+                    certificate.message_post(
+                        body=message_body,
+                        author_id=odoobot.id,
+                        partner_ids=users.partner_id.ids,
+                        subject=_("Certificate is next to expire"),
+                        subtype_xmlid="mail.mt_comment",
+                    )
+                    is_send = True
+
+        if is_send is False:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "type": "warning",
+                    "message": _(
+                        "According to the days for notification. "
+                        "No need to send notification"
+                    ),
+                    "sticky": False,
+                },
+            }
+        else:
+            return is_send
