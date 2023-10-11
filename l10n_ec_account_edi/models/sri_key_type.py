@@ -232,9 +232,9 @@ class SriKeyType(models.Model):
         ctx.verify(signature)
         return etree.tostring(doc, encoding="UTF-8", pretty_print=True).decode()
 
-    def days_to_expire(self, certificate):
-        if certificate.expire_date:
-            return (certificate.expire_date - fields.Date.today()).days
+    def days_to_expire(self):
+        if self.expire_date:
+            return (self.expire_date - fields.Date.today()).days
         return 0
 
     def action_send_notification(self):
@@ -242,17 +242,12 @@ class SriKeyType(models.Model):
         certificates = self.env["sri.key.type"].search([])
         is_send = False
 
-        for certificate in certificates:
-            users = certificate.user_ids
+        for cert in certificates:
+            users = cert.user_ids
             if users:
-                if (
-                    self.days_to_expire(certificate)
-                    <= certificate.days_for_notification
-                ):
-                    message_body = _(
-                        f"The certificate {certificate.name} is next to expire"
-                    )
-                    certificate.message_post(
+                if cert.days_to_expire() <= cert.days_for_notification:
+                    message_body = _(f"The certificate {cert.name} is next to expire")
+                    cert.message_post(
                         body=message_body,
                         author_id=odoobot.id,
                         partner_ids=users.partner_id.ids,
