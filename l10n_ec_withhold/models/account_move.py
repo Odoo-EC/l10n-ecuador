@@ -1,6 +1,7 @@
 import logging
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
 
 from .data import TAX_SUPPORT
@@ -79,6 +80,9 @@ class AccountMove(models.Model):
             and self.l10n_ec_withholding_type in self.get_withhold_types()
         )
 
+    def is_purchase_withhold(self):
+        return self.l10n_ec_withholding_type == "purchase" and self.is_withhold()
+
     def action_invoice_print(self):
         res = super(AccountMove, self).action_invoice_print()
         if any(move.is_withhold() for move in self):
@@ -97,7 +101,34 @@ class AccountMove(models.Model):
             return "l10n_ec_account_edi.report_invoice_document"
         return super()._get_name_invoice_report()
 
-    def action_create_sale_withhold_wizard(self):
+    def action_try_create_ecuadorian_withhold(self):
+        action = {}
+        if any(
+            move.is_purchase_document() and move.l10n_ec_withhold_active
+            for move in self
+        ):
+            if len(self) > 1:
+                raise UserError(
+                    _(
+                        "You can't create Withhold for some invoice, "
+                        "Please select only a Invoice."
+                    )
+                )
+            action = self._action_create_purchase_withhold_wizard()
+        elif any(
+            move.is_sale_document() and move.l10n_ec_withhold_active for move in self
+        ):
+            action = self._action_create_sale_withhold_wizard()
+        else:
+            raise UserError(
+                _(
+                    "Please select only invoice "
+                    "what satisfies the requirements for create withhold"
+                )
+            )
+        return action
+
+    def _action_create_sale_withhold_wizard(self):
         action = self.env.ref(
             "l10n_ec_withhold.l10n_ec_wizard_sale_withhold_action_window"
         ).read()[0]
@@ -115,7 +146,7 @@ class AccountMove(models.Model):
         action["context"] = ctx
         return action
 
-    def action_create_purchase_withhold_wizard(self):
+    def _action_create_purchase_withhold_wizard(self):
         self.ensure_one()
         action = self.env.ref(
             "l10n_ec_withhold.l10n_ec_wizard_purchase_withhold_action_window"
@@ -172,12 +203,18 @@ class AccountMove(models.Model):
             move.l10n_ec_withhold_count = len(move.l10n_ec_withhold_ids)
 
     @api.depends(
-        "partner_id.property_account_position_id",
-        "fiscal_position_id.l10n_ec_withhold",
-        "company_id.property_account_position_id",
+        "state",
+        "fiscal_position_id",
+        "company_id",
     )
     def _compute_l10n_ec_withhold_active(self):
         for move in self:
+            if move.state != "posted" or move.move_type not in [
+                "in_invoice",
+                "out_invoice",
+            ]:
+                move.l10n_ec_withhold_active = False
+                continue
             # En Ventas si la posición fiscal del cliente retiene
             move.l10n_ec_withhold_active = move.fiscal_position_id.l10n_ec_withhold
             if (

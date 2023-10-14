@@ -28,13 +28,14 @@
                                     <field
                                     name="invoice_id"
                                     domain="[('id', 'in', parent.invoice_ids)]"
+                                    options="{'no_create': True}"
                                 />
                                     <field
                                     name="tax_group_withhold_id"
                                     required="1"
                                     options="{'no_create': True}"
                                 />
-                                        <field
+                                    <field
                                     name="tax_withhold_id"
                                     required="1"
                                     options="{'no_create': True}"

@@ -17,15 +17,18 @@ class WizardCreateSaleWithhold(models.TransientModel):
         required=True,
     )
     withhold_totals = fields.Float(compute="_compute_total_withhold", store=True)
-
     invoice_ids = fields.Many2many(comodel_name="account.move", string="Invoice")
 
     @api.model
     def default_get(self, fields):
         defaults = super().default_get(fields)
-        invoices = self.env["account.move"].browse(self.env.context.get("active_ids"))
+        invoices = (
+            self.env["account.move"]
+            .browse(self.env.context.get("active_ids"))
+            .filtered("l10n_ec_withhold_active")
+        )
         if len(invoices.partner_id) > 1:
-            raise UserError(_("Choose a multiple invoices of a same customer"))
+            raise UserError(_("Please only select invoice of a same customer"))
         if any(invoice.payment_state == "paid" for invoice in invoices):
             raise UserError(
                 _("The selected invoice is paid or one of selected invoice is paid")
