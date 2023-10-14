@@ -71,23 +71,25 @@ class WizardAbstractWithholdLine(models.AbstractModel):
         comodel_name="account.tax",
         string="Withholding tax",
     )
-    base_amount = fields.Float(
-        string="Amount Base", compute="_compute_withholding_amount"
-    )
+    base_amount = fields.Float(string="Amount Base", readonly=True)
     withhold_amount = fields.Float(
-        string="Amount Withhold", compute="_compute_withholding_amount"
+        string="Amount Withhold",
+        compute="_compute_withholding_amount",
+        store=True,
     )
     invoice_id = fields.Many2one("account.move")
 
-    @api.depends("invoice_id", "tax_withhold_id")
-    def _compute_withholding_amount(self):
+    @api.onchange("invoice_id", "tax_group_withhold_id")
+    def _onchange_withholding_base(self):
         for line in self:
-            line.base_amount = 0.0
-            if line.tax_withhold_id.tax_group_id.l10n_ec_type == "withhold_income_tax":
+            if line.tax_group_withhold_id.l10n_ec_type == "withhold_income_tax":
                 line.base_amount = abs(line.invoice_id.amount_untaxed_signed)
-            elif line.tax_withhold_id.tax_group_id.l10n_ec_type == "withhold_vat":
+            elif line.tax_group_withhold_id.l10n_ec_type == "withhold_vat":
                 line.base_amount = abs(line.invoice_id.amount_tax_signed)
 
+    @api.depends("invoice_id", "tax_withhold_id", "base_amount")
+    def _compute_withholding_amount(self):
+        for line in self:
             line.withhold_amount = abs(
                 line.base_amount * line.tax_withhold_id.amount / 100
             )

@@ -59,7 +59,7 @@
                         t-foreach="impuestosDocSustento"
                     >
                         <codImpuestoDocSustento
-                            t-out="impuestoDocSustento.get('codImpuestoDocSustento')"
+                            t-out="impuestoDocSustento.get('codigo')"
                         />
                         <codigoPorcentaje
                             t-out="impuestoDocSustento.get('codigoPorcentaje')"
@@ -68,9 +68,7 @@
                             t-out="impuestoDocSustento.get('baseImponible')"
                         />
                         <tarifa t-out="impuestoDocSustento.get('tarifa')" />
-                        <valorImpuesto
-                            t-out="impuestoDocSustento.get('valorImpuesto')"
-                        />
+                        <valorImpuesto t-out="impuestoDocSustento.get('valor')" />
                     </impuestoDocSustento>
                 </impuestosDocSustento>
                 <retenciones>
@@ -78,13 +76,11 @@
                         t-as="retencion"
                         t-foreach="docSustento.get('retenciones')"
                     >
-                        <codigo t-out="retenciones.get('codigo')" />
-                        <codigoRetencion t-out="retenciones.get('codigoRetencion')" />
-                        <baseImponible t-out="retenciones.get('baseImponible')" />
-                        <porcentajeRetener
-                            t-out="retenciones.get('porcentajeRetener')"
-                        />
-                        <valorRetenido t-out="retenciones.get('valorRetenido')" />
+                        <codigo t-out="retencion.get('codigo')" />
+                        <codigoRetencion t-out="retencion.get('codigoPorcentaje')" />
+                        <baseImponible t-out="retencion.get('baseImponible')" />
+                        <porcentajeRetener t-out="retencion.get('tarifa')" />
+                        <valorRetenido t-out="retencion.get('valor')" />
                         <t t-if="docSustento.get('codSustento') == '10'">
                             <t t-call="l10n_ec_withhold.ec_edi_withhold_dividend_pay" />
                         </t>
@@ -93,12 +89,12 @@
                 <t t-if="docSustento.get('codDocSustento') == '41'">
                     <t t-call="l10n_ec_withhold.ec_edi_withhold_refunds" />
                 </t>
-                <Pagos t-if="pagos">
-                    <Pago t-as="pago" t-foreach="pagos">
-                        <formapago t-out="pago.get('formaPago')" />
+                <pagos t-if="docSustento.get('pagos')">
+                    <pago t-as="pago" t-foreach="docSustento.get('pagos')">
+                        <formaPago t-out="pago.get('formaPago')" />
                         <total t-out="pago.get('total')" />
-                    </Pago>
-                </Pagos>
+                    </pago>
+                </pagos>
             </docSustento>
         </docsSustento>
     </template>

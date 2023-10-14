@@ -45,6 +45,9 @@
                 <field name="l10n_latam_internal_type" invisible="1" />
                 <field name="l10n_ec_withhold_active" invisible="1" />
             </xpath>
+            <xpath expr="//group[@id='header_right_group']" position="inside">
+                <field name='l10n_ec_tax_support' />
+            </xpath>
             <xpath
                 expr="//field[@name='line_ids']//field[@name='name']"
                 position="after"
@@ -182,6 +185,7 @@
 <!--                            add new field invoice-->
                             <field name="company_id" invisible='1' />
                             <field name="l10n_ec_invoice_withhold_id" />
+                            <field name="l10n_ec_tax_support" />
                             <field name="tax_line_id" />
                             <field name="tax_base_amount" string="Monto base" />
                             <field name="balance" string="Monto retenido" />

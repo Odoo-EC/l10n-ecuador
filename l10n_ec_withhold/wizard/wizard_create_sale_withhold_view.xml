@@ -41,7 +41,7 @@
                                     options="{'no_create': True}"
                                     domain="[('tax_group_id', '=', tax_group_withhold_id), ('type_tax_use', '=', 'sale')]"
                                 />
-                                    <field name="base_amount" />
+                                    <field name="base_amount" force_save="1" />
                                     <field name="withhold_amount" />
                                 </tree>
                             </field>

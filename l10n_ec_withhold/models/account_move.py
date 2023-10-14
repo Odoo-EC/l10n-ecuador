@@ -65,7 +65,10 @@ class AccountMove(models.Model):
     def is_invoice(self, include_receipts=False):
         # when user print report
         # if is withhold force print(skip exception on server)
-        if self.env.context.get("force_print_withhold") and self.is_withhold():
+        if (
+            self.env.context.get("force_print_withhold")
+            or self.env.context.get("force_edi_withhold")
+        ) and self.is_withhold():
             return True
         return super(AccountMove, self).is_invoice(include_receipts)
 
@@ -82,6 +85,93 @@ class AccountMove(models.Model):
 
     def is_purchase_withhold(self):
         return self.l10n_ec_withholding_type == "purchase" and self.is_withhold()
+
+    def _get_l10n_ec_identification_type(self):
+        # inherit considering withholding
+        # base module only return data for invoices
+        self.ensure_one()
+        if self.is_purchase_withhold():
+            it_ruc = self.env.ref("l10n_ec.ec_ruc", False)
+            it_dni = self.env.ref("l10n_ec.ec_dni", False)
+            it_passport = self.env.ref("l10n_ec.ec_passport", False)
+            partner_identification = (
+                self.commercial_partner_id.l10n_latam_identification_type_id
+            )
+            # final consumer by default
+            identification_code = "07"
+            if partner_identification.id == it_ruc.id:
+                identification_code = "04"
+            elif partner_identification.id == it_dni.id:
+                identification_code = "05"
+            elif partner_identification.id == it_passport.id:
+                identification_code = "06"
+            return identification_code
+        return super()._get_l10n_ec_identification_type()
+
+    def _post(self, soft=True):
+        # OVERRIDE
+        # Set the electronic document to be posted and post immediately for synchronous formats.
+        # only for purchase withhold
+        posted = super()._post(soft=soft)
+        edi_document_vals_list = []
+        for move in posted:
+            # check if tax support is set into any invoice line or invoice
+            if move.is_purchase_document() and move.l10n_ec_withhold_active:
+                lines_without_tax_support = any(
+                    not invoice_line.l10n_ec_tax_support
+                    for invoice_line in move.invoice_line_ids
+                )
+                if not move.l10n_ec_tax_support and lines_without_tax_support:
+                    raise UserError(
+                        _(
+                            "Please fill a Tax Support on Invoice: %s or on all Invoice lines"
+                        )
+                        % (move.display_name)
+                    )
+            for edi_format in move.journal_id.edi_format_ids:
+                if (
+                    not move.is_purchase_withhold()
+                    or edi_format.code != "l10n_ec_format_sri"
+                ):
+                    continue
+                errors = edi_format._check_move_configuration(move)
+                if errors:
+                    raise UserError(
+                        _("Invalid invoice configuration:\n\n%s") % "\n".join(errors)
+                    )
+                existing_edi_document = move.edi_document_ids.filtered(
+                    lambda x: x.edi_format_id == edi_format
+                )
+                if existing_edi_document:
+                    existing_edi_document.write(
+                        {
+                            "state": "to_send",
+                            "attachment_id": False,
+                        }
+                    )
+                else:
+                    edi_document_vals_list.append(
+                        {
+                            "edi_format_id": edi_format.id,
+                            "move_id": move.id,
+                            "state": "to_send",
+                        }
+                    )
+
+        if edi_document_vals_list:
+            self.env["account.edi.document"].create(edi_document_vals_list)
+            posted.edi_document_ids._process_documents_no_web_services()
+            self.env.ref("account_edi.ir_cron_edi_network")._trigger()
+        return posted
+
+    def button_cancel(self):
+        res = super().button_cancel()
+        # cancel purchase withholding
+        for move in self:
+            for withhold in move.l10n_ec_withhold_ids:
+                if withhold.is_purchase_withhold():
+                    withhold.button_cancel()
+        return res
 
     def action_invoice_print(self):
         res = super(AccountMove, self).action_invoice_print()
@@ -197,6 +287,11 @@ class AccountMove(models.Model):
 
         return action
 
+    def _l10n_ec_get_document_date(self):
+        if self.is_purchase_withhold():
+            return self.date
+        return super()._l10n_ec_get_document_date()
+
     @api.depends("l10n_ec_withhold_ids")
     def _compute_l10n_ec_withhold_count(self):
         for move in self:
@@ -257,7 +352,7 @@ class AccountMoveLine(models.Model):
 
     l10n_ec_invoice_withhold_id = fields.Many2one(
         comodel_name="account.move",
-        string="Withhold",
+        string="Invoice",
         readonly=True,
         copy=False,
     )

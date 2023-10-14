@@ -1,6 +1,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from ..models.data import TAX_SUPPORT
+
 
 class WizardCreatePurchaseWithhold(models.TransientModel):
     _inherit = "l10n_ec.wizard.abstract.withhold"
@@ -77,3 +79,40 @@ class WizardPurchaseWithholdLine(models.TransientModel):
         string="Withhold",
         ondelete="cascade",
     )
+    l10n_ec_tax_support = fields.Selection(
+        TAX_SUPPORT,
+        string="Tax Support",
+        copy=False,
+    )
+
+    @api.onchange("invoice_id", "tax_group_withhold_id", "l10n_ec_tax_support")
+    def _onchange_withholding_base(self):
+        # replace function to compute base_amount considering l10n_ec_tax_support
+        for line in self:
+            if not line.l10n_ec_tax_support:
+                line.base_amount = 0.0
+                continue
+            base_amount = 0.0
+            for invoice_line in line.invoice_id.invoice_line_ids:
+                l10n_ec_tax_support = (
+                    invoice_line.l10n_ec_tax_support
+                    or line.invoice_id.l10n_ec_tax_support
+                )
+                if l10n_ec_tax_support == line.l10n_ec_tax_support:
+                    if line.tax_group_withhold_id.l10n_ec_type == "withhold_income_tax":
+                        base_amount += abs(invoice_line.price_subtotal)
+                    elif line.tax_group_withhold_id.l10n_ec_type == "withhold_vat":
+                        base_amount += abs(
+                            invoice_line.price_total - invoice_line.price_subtotal
+                        )
+            line.base_amount = base_amount
+
+    def _prepare_amount_vals(self, wizard, tax_data):
+        vals = super()._prepare_amount_vals(wizard, tax_data)
+        vals["l10n_ec_tax_support"] = self.l10n_ec_tax_support
+        return vals
+
+    def _prepare_basis_vals(self, wizard, tax_data):
+        vals = super()._prepare_basis_vals(wizard, tax_data)
+        vals["l10n_ec_tax_support"] = self.l10n_ec_tax_support
+        return vals
