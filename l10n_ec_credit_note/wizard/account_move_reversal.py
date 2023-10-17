@@ -11,3 +11,7 @@ class AccountInvoiceRefund(models.TransientModel):
     l10n_ec_type_credit_note = fields.Selection(
         [("discount", "Discount"), ("return", "Return")], string="Credit Note type"
     )
+
+    def reverse_moves(self):
+        self.ensure_one()
+        return super().reverse_moves()

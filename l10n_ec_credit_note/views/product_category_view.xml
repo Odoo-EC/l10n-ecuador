@@ -8,12 +8,12 @@
             <group name="account_property" position="inside">
                 <group string="Credit Note">
                     <field
-                        name="property_stock_account_discount_id"
+                        name="l10n_ec_property_account_discount_id"
                         options="{'no_quick_create': True}"
                         domain="[('deprecated', '=', False)]"
                     />
                     <field
-                        name="property_stock_account_refund_id"
+                        name="l10n_ec_property_account_return_id"
                         options="{'no_quick_create': True}"
                         domain="[('deprecated', '=', False)]"
                     />
