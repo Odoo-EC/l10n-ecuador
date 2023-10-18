@@ -13,5 +13,16 @@ class AccountInvoiceRefund(models.TransientModel):
     )
 
     def reverse_moves(self):
-        self.ensure_one()
-        return super().reverse_moves()
+        if self.company_id.account_fiscal_country_id.code == "EC":
+            return super(AccountInvoiceRefund, self.with_context(l10n_ec_manage_credit_note=True)).reverse_moves()
+        return super(AccountInvoiceRefund).reverse_moves()
+
+    def _prepare_default_reversal(self, move):
+        move_vals = super(AccountInvoiceRefund, self)._prepare_default_reversal(move)
+        if self.env.context.get("l10n_ec_manage_credit_note"):
+            move_vals.update(
+                {
+                    "l10n_ec_type_credit_note": self.l10n_ec_type_credit_note,
+                }
+            )
+        return move_vals
