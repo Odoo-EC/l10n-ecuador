@@ -52,4 +52,10 @@ class AccountMove(models.Model):
                         account_id = product.categ_id.l10n_ec_property_account_return_id.id
                     elif l10n_ec_type_credit_note == "discount" and product.categ_id.l10n_ec_property_account_discount_id:
                         account_id = product.categ_id.l10n_ec_property_account_discount_id.id
+            if not account_id and self.company_id:
+                if product.categ_id:
+                    if l10n_ec_type_credit_note == "return" and self.company_id.l10n_ec_property_account_return_id:
+                        account_id = self.company_id.l10n_ec_property_account_return_id.id
+                    elif l10n_ec_type_credit_note == "discount" and self.company_id.l10n_ec_property_account_discount_id:
+                        account_id = self.company_id.l10n_ec_property_account_discount_id.id
         return account_id

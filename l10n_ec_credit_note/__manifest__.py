@@ -10,6 +10,7 @@
 
     "data": [
         "security/ir.model.access.csv",
+        "views/res_config_view.xml",
         "views/product_category_view.xml",
         "views/product_template_view.xml",
         # "views/account_move_view.xml",
