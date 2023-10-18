@@ -26,15 +26,23 @@ class AccountMove(models.Model):
         return action
 
     def _reverse_move_vals(self, default_values, cancel=True):
+        l10n_ec_type_credit_note = default_values['l10n_ec_type_credit_note']
         move_vals = super()._reverse_move_vals(default_values, cancel)
         if self.env.context.get("l10n_ec_manage_credit_note") and default_values['l10n_ec_type_credit_note']:
+            move_vals_remove = []
             for line_vals in move_vals['line_ids']:
                 line_dict = line_vals[2]
                 if 'product_id' in line_dict:
-                    account_id = self._get_account_product_line(line_dict['product_id'],
-                                                                default_values['l10n_ec_type_credit_note'])
+                    account_id = self._get_account_product_line(line_dict['product_id'], l10n_ec_type_credit_note)
                     if account_id:
                         line_dict['account_id'] = account_id
+                if ('is_anglo_saxon_line' in line_dict
+                    and line_dict['is_anglo_saxon_line']
+                    and l10n_ec_type_credit_note == 'discount'
+                ):
+                    move_vals_remove.append(line_vals)
+            for line_vals in move_vals_remove:
+                move_vals['line_ids'].remove(line_vals)
         return move_vals
 
     @api.model
