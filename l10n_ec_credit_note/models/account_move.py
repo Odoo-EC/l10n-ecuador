@@ -32,7 +32,7 @@ class AccountMove(models.Model):
             move_vals_remove = []
             for line_vals in move_vals['line_ids']:
                 line_dict = line_vals[2]
-                if 'product_id' in line_dict:
+                if 'exclude_from_invoice_tab' in line_dict and not line_dict['exclude_from_invoice_tab']:
                     account_id = self._get_account_product_line(line_dict['product_id'], l10n_ec_type_credit_note)
                     if account_id:
                         line_dict['account_id'] = account_id
@@ -60,10 +60,9 @@ class AccountMove(models.Model):
                         account_id = product.categ_id.l10n_ec_property_account_return_id.id
                     elif l10n_ec_type_credit_note == "discount" and product.categ_id.l10n_ec_property_account_discount_id:
                         account_id = product.categ_id.l10n_ec_property_account_discount_id.id
-            if not account_id and self.company_id:
-                if product.categ_id:
-                    if l10n_ec_type_credit_note == "return" and self.company_id.l10n_ec_property_account_return_id:
-                        account_id = self.company_id.l10n_ec_property_account_return_id.id
-                    elif l10n_ec_type_credit_note == "discount" and self.company_id.l10n_ec_property_account_discount_id:
-                        account_id = self.company_id.l10n_ec_property_account_discount_id.id
+        if (not account_id and self.company_id) or (not product_id and self.company_id):
+                if l10n_ec_type_credit_note == "return" and self.company_id.l10n_ec_property_account_return_id:
+                    account_id = self.company_id.l10n_ec_property_account_return_id.id
+                elif l10n_ec_type_credit_note == "discount" and self.company_id.l10n_ec_property_account_discount_id:
+                    account_id = self.company_id.l10n_ec_property_account_discount_id.id
         return account_id
