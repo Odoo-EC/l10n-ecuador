@@ -8,7 +8,8 @@
         <field name="mode">primary</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='reason']" position="before">
-                <field name="l10n_ec_type_credit_note" required="1"/>
+                <field name="l10n_ec_type_credit_note"
+                       widget="radio" required="1"/>
             </xpath>
         </field>
     </record>

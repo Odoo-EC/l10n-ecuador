@@ -13,7 +13,7 @@
         "views/res_config_view.xml",
         "views/product_category_view.xml",
         "views/product_template_view.xml",
-        # "views/account_move_view.xml",
+        "views/account_move_view.xml",
         "wizard/account_invoice_refund_view.xml",
     ],
     "demo": [],
