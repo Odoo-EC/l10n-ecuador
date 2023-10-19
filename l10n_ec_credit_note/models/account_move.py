@@ -61,8 +61,14 @@ class AccountMove(models.Model):
                     elif l10n_ec_type_credit_note == "discount" and product.categ_id.l10n_ec_property_account_discount_id:
                         account_id = product.categ_id.l10n_ec_property_account_discount_id.id
         if (not account_id and self.company_id) or (not product_id and self.company_id):
-                if l10n_ec_type_credit_note == "return" and self.company_id.l10n_ec_property_account_return_id:
-                    account_id = self.company_id.l10n_ec_property_account_return_id.id
-                elif l10n_ec_type_credit_note == "discount" and self.company_id.l10n_ec_property_account_discount_id:
-                    account_id = self.company_id.l10n_ec_property_account_discount_id.id
+            if l10n_ec_type_credit_note == "return" and self.company_id.l10n_ec_property_account_return_id:
+                account_id = self.company_id.l10n_ec_property_account_return_id.id
+            elif l10n_ec_type_credit_note == "discount" and self.company_id.l10n_ec_property_account_discount_id:
+                account_id = self.company_id.l10n_ec_property_account_discount_id.id
         return account_id
+
+    def _stock_account_prepare_anglo_saxon_out_lines_vals(self):
+        discount_credit_notes = self.filtered(
+            lambda x: (x.move_type in ["in_refund", "out_refund"] and x.l10n_ec_type_credit_note == "discount"))
+
+        return super(AccountMove, self - discount_credit_notes)._stock_account_prepare_anglo_saxon_out_lines_vals()
