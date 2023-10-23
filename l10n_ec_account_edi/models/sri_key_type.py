@@ -78,6 +78,7 @@ class SriKeyType(models.Model):
         string="Serial number (certificate)", readonly=True
     )
     cert_version = fields.Char(string="Version", readonly=True)
+    days_for_notification = fields.Integer(string="Days for notification", default=30)
 
     @tools.ormcache("self.file_content", "self.password", "self.state")
     def _decode_certificate(self):
@@ -228,3 +229,36 @@ class SriKeyType(models.Model):
         ctx.sign(signature)
         ctx.verify(signature)
         return etree.tostring(doc, encoding="UTF-8", pretty_print=True).decode()
+
+    def days_to_expire(self):
+        if self.expire_date:
+            return (self.expire_date - fields.Date.today()).days
+        return 0
+
+    def action_send_notification(self):
+        certificates = self.env["sri.key.type"].search([])
+        is_send = False
+
+        for cert in certificates:
+            if cert.days_to_expire() <= cert.days_for_notification:
+                notification_template = self.env.ref(
+                    "l10n_ec_account_edi.email_template_cert_notify"
+                )
+                notification_template.send_mail(cert.id)
+                is_send = True
+
+        if is_send is False:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "type": "warning",
+                    "message": _(
+                        "According to the days for notification. "
+                        "No need to send notification"
+                    ),
+                    "sticky": True,
+                },
+            }
+        else:
+            return is_send

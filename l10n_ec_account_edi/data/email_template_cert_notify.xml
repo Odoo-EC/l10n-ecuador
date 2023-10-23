@@ -1,0 +1,157 @@
+<?xml version="1.0" ?>
+<odoo noupdate="1">
+    <record id="email_template_cert_notify" model="mail.template">
+        <field name="name">The certificate is next to expire</field>
+        <field name="model_id" ref="model_sri_key_type" />
+        <field
+            name="subject"
+        >The certificate {{ object.name }} is next to expire</field>
+        <field name="email_to">somebody@odoo.ec</field>
+        <field name="body_html" type="html">
+            <table
+                border="0"
+                cellpadding="0"
+                cellspacing="0"
+                style="padding-top: 16px; background-color: #F1F1F1; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;"
+            >
+                <tr>
+                    <td align="center">
+                        <table
+                            border="0"
+                            cellpadding="0"
+                            cellspacing="0"
+                            width="590"
+                            style="padding: 24px; background-color: white; color: #454748; border-collapse:separate;"
+                        >
+                            <tbody>
+                                <!-- HEADER -->
+                                <tr>
+                                    <td align="center" style="min-width: 590px;">
+                                        <table
+                                            border="0"
+                                            cellpadding="0"
+                                            cellspacing="0"
+                                            width="100%"
+                                            style="background-color: white; padding: 0; border-collapse:separate;"
+                                        >
+                                            <tr>
+                                                <td valign="middle">
+                                                    <span
+                                                        style="font-size: 10px;"
+                                                    >The certificate
+                                                        <t t-out="object.name " />
+                                                        is next to expire
+                                                    </span>
+                                                    <br />
+                                                </td>
+                                                <td valign="middle" align="right">
+                                                    <img
+                                                        t-attf-src="/logo.png?company={{ object.company_id.id }}"
+                                                        style="padding: 0px; margin: 0px; height: 48px;"
+                                                        t-att-alt="object.company_id.name"
+                                                    />
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td
+                                                    colspan="2"
+                                                    style="text-align:center;"
+                                                >
+                                                    <hr
+                                                        width="100%"
+                                                        style="background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin:4px 0px 32px 0px;"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <!-- CONTENT -->
+                                <tr>
+                                    <td style="min-width: 590px;">
+                                        <table
+                                            border="0"
+                                            cellpadding="0"
+                                            cellspacing="0"
+                                            width="590"
+                                            style="min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;"
+                                        >
+                                            <tr>
+                                                <td
+                                                    valign="top"
+                                                    style="font-size: 13px;"
+                                                >
+                                                    <div>
+                                                        Dear,
+                                                        <br />
+                                                        This email is to notify you that the certificate <t
+                                                            t-out="object.name"
+                                                        /> is next to expire
+                                                        on <t
+                                                            t-out="object.expire_date"
+                                                        />.
+                                                        <br />
+                                                        If this certificate is not renewed, the system will not be able
+                                                        to sign documents.
+                                                        <br />
+                                                        Thanks for your attention.
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <!-- FOOTER -->
+                                <tr>
+                                    <td
+                                        align="center"
+                                        style="min-width: 590px; padding: 0 8px 0 8px; font-size:11px;"
+                                    >
+                                        <hr
+                                            width="100%"
+                                            style="background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 4px 0px;"
+                                        />
+                                        <b
+                                            t-out="object.company_id.name or ''"
+                                        >My Company (San Francisco)</b>
+                                        <br />
+                                        <div style="color: #999999;">
+                                            <t
+                                                t-out="object.company_id.phone or ''"
+                                            >+1 650-123-4567</t>
+                                            <t t-if="object.company_id.email">
+                                                |
+                                                <a
+                                                    t-attf-href="'mailto:%s' % {{ object.company_id.email }}"
+                                                    style="text-decoration:none; color: #999999;"
+                                                    t-out="object.company_id.email or ''"
+                                                >info@yourcompany.com
+                                                </a>
+                                            </t>
+                                            <t t-if="object.company_id.website">
+                                                |
+                                                <a
+                                                    t-attf-href="'%s' % {{ object.company_id.website }}"
+                                                    style="text-decoration:none; color: #999999;"
+                                                    t-out="object.company_id.website or ''"
+                                                >http://www.example.com
+                                                </a>
+                                            </t>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                <!-- POWERED BY -->
+                <tr>
+                    <td align="center" style="min-width: 590px;">
+                        <br />
+                    </td>
+                </tr>
+            </table>
+        </field>
+        <field name="auto_delete" eval="True" />
+    </record>
+</odoo>
