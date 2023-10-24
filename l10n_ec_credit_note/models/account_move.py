@@ -36,6 +36,7 @@ class AccountMove(models.Model):
         if (
             self.env.context.get("l10n_ec_manage_credit_note")
             and default_values["l10n_ec_type_credit_note"]
+            and self.move_type in ["out_refund"]
         ):
             move_vals_remove = []
             for line_vals in move_vals["line_ids"]:
@@ -47,7 +48,6 @@ class AccountMove(models.Model):
                     account_id = self._get_account_product_line(
                         line_dict["product_id"], l10n_ec_type_credit_note
                     )
-                    # TODO: Respetar cuando es venta
                     if account_id:
                         line_dict["account_id"] = account_id
                 if (
