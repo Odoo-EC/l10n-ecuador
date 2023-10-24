@@ -2,12 +2,11 @@
     "name": "Credit Notes extension for Ecuador",
     "category": "Account",
     "author": "Odoo Community Association (OCA), "
-              "Carlos Lopez, Renan Nazate, Yazber Romero, Luis Romero, Jorge Quiguango, Ricardo Jara",
+    "Carlos Lopez, Renan Nazate, Yazber Romero, Luis Romero, Jorge Quiguango, Ricardo Jara",
     "website": "https://github.com/OCA/l10n-ecuador",
     "license": "AGPL-3",
     "version": "15.0.0.0.1",
     "depends": ["account", "account_edi", "l10n_ec", "l10n_ec_base"],
-
     "data": [
         "security/ir.model.access.csv",
         "views/res_config_view.xml",

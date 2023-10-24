@@ -9,21 +9,22 @@
             ref="l10n_ec_account_edi.res_config_settings_l10n_ec_edi"
         />
         <field name="arch" type="xml">
-            <xpath
-                expr="//div[@id='l10n_ec_section']"
-                position="inside"
-            >
+            <xpath expr="//div[@id='l10n_ec_section']" position="inside">
                 <div class="col-12 col-lg-6 o_setting_box">
-                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_left_pane" />
                     <div class="o_setting_right_pane">
                         <span class="o_form_label">Credit Note</span>
                         <div class="row col-12 oe_grey">
                             <ul>
-                                <li>Set the default account for discount credit notes</li>
+                                <li
+                                >Set the default account for discount credit notes</li>
                             </ul>
                         </div>
                         <div class="row col-12">
-                            <label for="l10n_ec_property_account_discount_id" string="C.C. Discount"/>
+                            <label
+                                for="l10n_ec_property_account_discount_id"
+                                string="C.C. Discount"
+                            />
                             <field
                                 name="l10n_ec_property_account_discount_id"
                                 class="oe_in_line"

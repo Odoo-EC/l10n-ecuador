@@ -1,8 +1,4 @@
-import re
-from collections import OrderedDict
-
-from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo import fields, models
 
 
 class AccountInvoiceRefund(models.TransientModel):
@@ -14,7 +10,9 @@ class AccountInvoiceRefund(models.TransientModel):
 
     def reverse_moves(self):
         if self.company_id.account_fiscal_country_id.code == "EC":
-            return super(AccountInvoiceRefund, self.with_context(l10n_ec_manage_credit_note=True)).reverse_moves()
+            return super(
+                AccountInvoiceRefund, self.with_context(l10n_ec_manage_credit_note=True)
+            ).reverse_moves()
         return super().reverse_moves()
 
     def _prepare_default_reversal(self, move):
