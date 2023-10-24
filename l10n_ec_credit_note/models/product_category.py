@@ -15,5 +15,5 @@ class ProductCategory(models.Model):
         "account.account",
         "C.C. Refund",
         company_dependent=True,
-        track_visibility="onchange",
+        tracking=True,
     )
