@@ -34,6 +34,7 @@ class AccountMove(models.Model):
                 line_dict = line_vals[2]
                 if 'exclude_from_invoice_tab' in line_dict and not line_dict['exclude_from_invoice_tab']:
                     account_id = self._get_account_product_line(line_dict['product_id'], l10n_ec_type_credit_note)
+                    # TODO: Respetar cuando es venta
                     if account_id:
                         line_dict['account_id'] = account_id
                 if ('is_anglo_saxon_line' in line_dict
