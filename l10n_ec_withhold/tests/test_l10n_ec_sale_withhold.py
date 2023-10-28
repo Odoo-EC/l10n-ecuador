@@ -17,6 +17,11 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
     ):
         super().setUpClass(chart_template_ref=chart_template_ref)
         cls.WizardWithhold = cls.env["l10n_ec.wizard.create.sale.withhold"]
+        cls.position_withhold = cls.env["account.fiscal.position"].create(
+            {"name": "Withhold", "l10n_ec_withhold": True}
+        )
+        cls.partner_with_email.property_account_position_id = cls.position_withhold
+        cls.partner_ruc.property_account_position_id = cls.position_withhold
 
     def get_tax_group_and_taxes(self):
         """
