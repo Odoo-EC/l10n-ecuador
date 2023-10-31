@@ -78,6 +78,7 @@ class SriKeyType(models.Model):
         string="Serial number (certificate)", readonly=True
     )
     cert_version = fields.Char(string="Version", readonly=True)
+    days_for_notification = fields.Integer(string="Days for notification", default=30)
 
     @tools.ormcache("self.file_content", "self.password", "self.state")
     def _decode_certificate(self):
@@ -228,3 +229,65 @@ class SriKeyType(models.Model):
         ctx.sign(signature)
         ctx.verify(signature)
         return etree.tostring(doc, encoding="UTF-8", pretty_print=True).decode()
+
+    def days_to_expire(self):
+        if self.expire_date:
+            return (self.expire_date - fields.Date.today()).days
+        return 0
+
+    def action_email_notification(self):
+        certificates = self.env["sri.key.type"].search([])
+        is_send = False
+
+        for cert in certificates:
+            if cert.days_to_expire() <= cert.days_for_notification:
+                mail_compose_model = self.env["mail.compose.message"]
+                action = cert.action_email_configuration()
+                ctx = action.get("context")
+                msj = mail_compose_model.with_context(**ctx).create({})
+                try:
+                    msj._onchange_template_id_wrapper()
+                    msj._action_send_mail()
+                    is_send = True
+                except Exception as ex:
+                    _logger.warning(tools.ustr(ex))
+                    return False
+
+        if is_send is False:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "type": "warning",
+                    "message": _(
+                        "According to the days for notification. "
+                        "No need to send notification"
+                    ),
+                    "sticky": False,
+                },
+            }
+        else:
+            return is_send
+
+    def action_email_configuration(self):
+        self.ensure_one()
+        template = self.env.ref("l10n_ec_account_edi.email_template_notify", False)
+        ctx = {
+            "default_model": self._name,
+            "default_res_id": self.id,
+            "default_use_template": bool(template),
+            "default_template_id": template.id,
+            "default_composition_mode": "comment",
+            "custom_layout": "mail.mail_notification_light",
+            "force_email": True,
+            "model_description": _("Certificate Notification"),
+        }
+        return {
+            "type": "ir.actions.act_window",
+            "view_mode": "form",
+            "res_model": "mail.compose.message",
+            "views": [(False, "form")],
+            "view_id": False,
+            "target": "new",
+            "context": ctx,
+        }
