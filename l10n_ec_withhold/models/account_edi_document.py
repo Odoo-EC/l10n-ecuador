@@ -1,7 +1,7 @@
 import logging
 from os import path
 
-from odoo import api, models
+from odoo import models
 
 _logger = logging.getLogger(__name__)
 EDI_DATE_FORMAT = "%d/%m/%Y"
@@ -70,14 +70,26 @@ class AccountEdiDocument(models.Model):
             )
         return type_suject_withholding
 
-    @api.model
-    def _l10n_ec_prepare_tax_vals_edi(self, tax_data):
-        tax_vals = super()._l10n_ec_prepare_tax_vals_edi(tax_data)
-        # profit withhold tak from l10n_ec_code_base
-        tax = tax_data["tax"]
-        if tax.tax_group_id.l10n_ec_type == "withhold_income_tax":
-            tax_vals["codigoPorcentaje"] = tax.l10n_ec_code_base
-        return tax_vals
+    def _l10n_ec_get_withhold_taxes_vals(self, withhold_lines):
+        withhold_tax_vals = []
+        for withhold_line in withhold_lines:
+            tax = withhold_line.tax_line_id
+            rate = tax.amount
+            tax_code = tax.l10n_ec_xml_fe_code
+            # profit withhold take from l10n_ec_code_base
+            if tax.tax_group_id.l10n_ec_type == "withhold_income_tax":
+                tax_code = tax.l10n_ec_code_base
+            tax_vals = {
+                "codigo": tax.tax_group_id.l10n_ec_xml_fe_code,
+                "codigoPorcentaje": tax_code,
+                "baseImponible": self._l10n_ec_number_format(
+                    abs(withhold_line.tax_base_amount), 6
+                ),
+                "tarifa": self._l10n_ec_number_format(abs(rate), 6),
+                "valor": self._l10n_ec_number_format(abs(withhold_line.price_unit), 6),
+            }
+            withhold_tax_vals.append(tax_vals)
+        return withhold_tax_vals
 
     def _l10n_ec_get_support_data(self):
         def filter_support_invoice_lines(invoice_line):
@@ -97,11 +109,9 @@ class AccountEdiDocument(models.Model):
             invoice_line_data.setdefault(line_key, []).append(withhold_line)
         for line_key in invoice_line_data:
             invoice, tax_support = line_key
+            withhold_lines = invoice_line_data[line_key]
             invoice_taxes_data = invoice._prepare_edi_tax_details(
                 filter_invl_to_apply=filter_support_invoice_lines,
-            )
-            withhold_taxes_data = withhold._prepare_edi_tax_details(
-                filter_invl_to_apply=filter_support_invoice_lines
             )
             amount_total = abs(
                 invoice_taxes_data.get("base_amount")
@@ -127,9 +137,7 @@ class AccountEdiDocument(models.Model):
                 "impuestosDocSustento": self.l10n_ec_header_get_total_with_taxes(
                     invoice_taxes_data
                 ),
-                "retenciones": self.l10n_ec_header_get_total_with_taxes(
-                    withhold_taxes_data
-                ),
+                "retenciones": self._l10n_ec_get_withhold_taxes_vals(withhold_lines),
                 "pagos": [
                     {
                         "name": invoice.l10n_ec_sri_payment_id.name,
