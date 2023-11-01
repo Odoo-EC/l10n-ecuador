@@ -33,7 +33,7 @@ class TestL10nCheckCertificate(TestL10nECEdiCommon):
         self.assertTrue(result)
 
     def test_l10n_ec_check_crash_send_email(self):
-        """Test that the cron task is executed correctly when certificate is expired."""
+        """Fail send email."""
         self._setup_edi_company_ec()
 
         certificates = self.env["sri.key.type"].search([])
