@@ -40,7 +40,7 @@ class AccountMove(models.Model):
     )
 
     l10n_ec_withhold_active = fields.Boolean(
-        string="Withholds ?",
+        string="Withholds?",
         compute="_compute_l10n_ec_withhold_active",
         store=True,
     )
@@ -78,7 +78,7 @@ class AccountMove(models.Model):
 
     def is_withhold(self):
         return (
-            self.company_id.account_fiscal_country_id.code == "EC"
+            self.tax_country_code == "EC"
             and self.l10n_latam_internal_type == "withhold"
             and self.l10n_ec_withholding_type in self.get_withhold_types()
         )
@@ -303,25 +303,38 @@ class AccountMove(models.Model):
         "company_id",
     )
     def _compute_l10n_ec_withhold_active(self):
+        """
+        Compute when the user can input withholding.
+        By default, if the company is Ecuadorian and this module is installed,
+        this feature is enabled.
+        However, if withholding is explicitly configured
+        as disabled in the tax position, then disable this feature.
+        """
         for move in self:
-            if move.state != "posted" or move.move_type not in [
-                "in_invoice",
-                "out_invoice",
-            ]:
+            move_fiscal_position = move.fiscal_position_id
+            company_fiscal_position = move.company_id.property_account_position_id
+            if (
+                move.state != "posted"
+                or move.move_type
+                not in [
+                    "in_invoice",
+                    "out_invoice",
+                ]
+                or move.tax_country_code != "EC"
+            ):
                 move.l10n_ec_withhold_active = False
                 continue
-            # En Ventas si la posición fiscal del cliente retiene
-            move.l10n_ec_withhold_active = move.fiscal_position_id.l10n_ec_withhold
+            move.l10n_ec_withhold_active = True
             if (
-                move.move_type in move.get_purchase_types()
-                and move.l10n_ec_withhold_active
-                and self.company_id.property_account_position_id
+                move.move_type == "out_invoice"
+                and move_fiscal_position.l10n_ec_avoid_withhold
             ):
-                # En Compras si la posición fiscal retiene y el proveedor retiene,
-                # vemos si la compañía retiene
-                move.l10n_ec_withhold_active = (
-                    self.company_id.property_account_position_id.l10n_ec_withhold
-                )
+                move.l10n_ec_withhold_active = False
+            if move.move_type == "in_invoice" and (
+                move_fiscal_position.l10n_ec_avoid_withhold
+                or company_fiscal_position.l10n_ec_avoid_withhold
+            ):
+                move.l10n_ec_withhold_active = False
 
     def _get_l10n_ec_tax_support(self):
         self.ensure_one()
