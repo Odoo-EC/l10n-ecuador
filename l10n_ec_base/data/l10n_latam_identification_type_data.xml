@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <record id='l10n_latam_base.it_vat' model='l10n_latam.identification.type'>
         <field name='name'>VAT</field>
-        <field name='active' eval="False"/>
+        <field name='active' eval="False" />
     </record>
 
     <record id='l10n_ec.ec_passport' model='l10n_latam.identification.type'>
-        <field name='active' eval="False"/>
+        <field name='active' eval="False" />
     </record>
 </odoo>
