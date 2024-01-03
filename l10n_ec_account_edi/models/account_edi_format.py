@@ -247,18 +247,14 @@ class AccountEdiFormat(models.Model):
                             }
                         )
                     if client_send is None or auth_client is None:
-                        res.update(
-                            {
-                                document: {
-                                    "success": False,
-                                    "error": _(
-                                        "Can't connect to SRI Webservice, try in few minutes"
-                                    ),
-                                    "attachment": attachment,
-                                    "blocking_level": "error",
-                                }
-                            }
-                        )
+                        # No enviar al SRI, se usa en ambiente de pruebas
+                        if company.l10n_ec_type_environment == "none":
+                            is_auth = True
+                            errors.clear()
+                        else:
+                            errors.append(
+                                _("Can't connect to SRI Webservice, try in few minutes")
+                            )
                         continue
                     # intentar consultar el documento previamente autorizado
                     is_sent = False
@@ -285,6 +281,7 @@ class AccountEdiFormat(models.Model):
                             sri_res
                         )
                         errors.extend(msj)
+
             except Exception as ex:
                 _logger.error(tools.ustr(traceback.format_exc()))
                 errors.append(
@@ -335,7 +332,9 @@ class AccountEdiFormat(models.Model):
         # es necesario que se cree una sola instancia
         # Para conexion y asi evitar un reinicio constante de la comunicacion
         wsClient = None
-        if environment == "test":
+        if environment == "none":
+            return None
+        elif environment == "test":
             ws_url = TEST_URL.get(url_type)
         elif environment == "production":
             ws_url = PRODUCTION_URL.get(url_type)

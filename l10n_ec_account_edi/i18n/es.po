@@ -421,6 +421,11 @@ msgid "Credit Note"
 msgstr "Nota de crédito"
 
 #. module: l10n_ec_account_edi
+#: model:ir.model.fields,field_description:l10n_ec_account_edi.field_account_edi_document__l10n_ec_partner_email
+msgid "Customer Email"
+msgstr "Correo del cliente"
+
+#. module: l10n_ec_account_edi
 #: model:ir.model.fields,field_description:l10n_ec_account_edi.field_res_company__l10n_ec_credit_note_version
 #: model:ir.model.fields,field_description:l10n_ec_account_edi.field_res_config_settings__l10n_ec_credit_note_version
 msgid "Credit Note Version xml"
@@ -703,6 +708,11 @@ msgstr "L10n Latam Tipo Interno"
 #: model_terms:ir.ui.view,arch_db:l10n_ec_account_edi.account_edi_document_view_tree
 msgid "Last Error Message"
 msgstr "Último Mensaje de Error"
+
+#. module: l10n_ec_account_edi
+#: model:ir.model.fields.selection,name:l10n_ec_account_edi.selection__res_company__l10n_ec_type_environment__none
+msgid "No Send"
+msgstr "No Enviar"
 
 #. module: l10n_ec_account_edi
 #: model:ir.model.fields,field_description:l10n_ec_account_edi.field_l10n_ec_additional_information____last_update
