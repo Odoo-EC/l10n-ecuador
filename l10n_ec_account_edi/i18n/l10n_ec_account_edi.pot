@@ -950,7 +950,7 @@ msgstr ""
 #: code:addons/l10n_ec_account_edi/models/account_move.py:0
 #, python-format
 msgid ""
-"You cannot validate an invoice with zero quantity. Please review the following items:\n"
+"You cannot validate an invoice with zero or negative quantity. Please review the following items:\n"
 "%s"
 msgstr ""
 
@@ -958,7 +958,7 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ec_account_edi/models/account_move.py:0
 #, python-format
-msgid "You cannot validate an invoice with zero value."
+msgid "You cannot validate an invoice with zero or negative value."
 msgstr ""
 
 #. module: l10n_ec_account_edi

@@ -982,19 +982,19 @@ msgstr "XML Documentos Electrónicos"
 #: code:addons/l10n_ec_account_edi/models/account_move.py:0
 #, python-format
 msgid ""
-"You cannot validate an invoice with zero quantity. Please review the "
+"You cannot validate an invoice with zero or negative quantity.. Please review the "
 "following items:\n"
 "%s"
 msgstr ""
-"No se puede Validar una Factura con Cantidad Cero. Revise los siguientes "
+"No se puede Validar una Factura con Cantidad Cero o Negativa. Revise los siguientes "
 "elementos:\n"
 "%s"
 
 #. module: l10n_ec_account_edi
 #: code:addons/l10n_ec_account_edi/models/account_move.py:0
 #, python-format
-msgid "You cannot validate an invoice with zero value."
-msgstr "No se puede Validar una Factura con Valor Cero."
+msgid "You cannot validate an invoice with zero or negative value."
+msgstr "No se puede Validar una Factura con Valor Cero o Negativa."
 
 #. module: l10n_ec_account_edi
 #: code:addons/l10n_ec_account_edi/models/account_edi_format.py:0

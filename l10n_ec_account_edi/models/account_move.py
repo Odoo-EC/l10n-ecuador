@@ -311,14 +311,14 @@ class AccountMove(models.Model):
                 if product_not_quantity:
                     error_list.append(
                         _(
-                            "You cannot validate an invoice with zero quantity. "
+                            "You cannot validate an invoice with zero or negative quantity. "
                             "Please review the following items:\n%s"
                         )
                         % "\n".join(product_not_quantity)
                     )
                 if float_compare(move.amount_total, 0.0, precision_digits=2) <= 0:
                     error_list.append(
-                        _("You cannot validate an invoice with zero value.")
+                        _("You cannot validate an invoice with zero or negative value.")
                     )
                 if error_list:
                     raise UserError("\n".join(error_list))
