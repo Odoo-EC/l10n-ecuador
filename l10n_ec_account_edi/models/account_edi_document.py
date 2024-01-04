@@ -726,3 +726,18 @@ class AccountEdiDocument(models.Model):
             ]
         )
         account_moves_with_final_consumer.write({"is_move_sent": True})
+
+    def action_open_edi(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "view_type": "form",
+            "view_id": self.env.ref(
+                "l10n_ec_account_edi.account_edi_document_view_form"
+            ).id,
+            "view_mode": "form",
+            "res_model": "account.edi.document",
+            "context": {},
+            "res_id": self.id,
+            "target": "self",
+        }

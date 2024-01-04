@@ -1,5 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
+
+    <!-- Editar el formulario de account_edi -->
+    <record id="account_edi_view_move_form" model="ir.ui.view">
+        <field name="name">account_edi.account.move.form</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account_edi.view_move_form_inherit" />
+        <field name="arch" type="xml">
+            <xpath
+                expr="//field[@name='edi_document_ids']/tree/button[@name='action_export_xml']"
+                position="after"
+            >
+                <button
+                    name="action_open_edi"
+                    type="object"
+                    class="oe_link oe_inline"
+                    string="Open"
+                    groups="base.group_no_one"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Editar el formulario de account -->
     <record id="view_move_form" model="ir.ui.view">
         <field name="name">account.move.form</field>
         <field name="model">account.move</field>

@@ -652,6 +652,11 @@ msgid "Invoice"
 msgstr "Factura"
 
 #. module: l10n_ec_account_edi
+#: model_terms:ir.ui.view,arch_db:l10n_ec_account_edi.account_edi_view_move_form
+msgid "Open"
+msgstr "Abrir"
+
+#. module: l10n_ec_account_edi
 #: model_terms:ir.ui.view,arch_db:l10n_ec_account_edi.view_move_form
 msgid "Invoice Refund"
 msgstr "Factura rectificativa"

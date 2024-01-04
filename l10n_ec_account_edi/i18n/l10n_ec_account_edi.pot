@@ -632,6 +632,11 @@ msgid "Invoice Refund"
 msgstr ""
 
 #. module: l10n_ec_account_edi
+#: model_terms:ir.ui.view,arch_db:l10n_ec_account_edi.account_edi_view_move_form
+msgid "Open"
+msgstr ""
+
+#. module: l10n_ec_account_edi
 #: model:ir.model.fields,field_description:l10n_ec_account_edi.field_res_config_settings__l10n_ec_final_consumer_limit
 msgid "Invoice Sales Limit Final Consumer"
 msgstr ""
