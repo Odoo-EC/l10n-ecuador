@@ -84,17 +84,19 @@
             <table class="table table-sm table-no-border">
                 <tbody>
                     <tr>
-                        <td style="width: 50%">
+                        <td style="padding-left: 0px;">
                             <t
                                 t-call="l10n_ec_account_edi.electronic_report_common_info_aditional"
                             />
-                            <br />
-                            <t
+                            
+                            <div style="height: 10px;" />
+
+                            <t style="padding-top: 100px;"
                                 t-if="o.move_type in ('out_invoice', 'in_invoice')"
                                 t-call="l10n_ec_account_edi.electronic_report_common_payment_info"
                             />
                         </td>
-                        <td style="width: 40%">
+                        <td style="width: 40%; padding-right: 0px;">
                             <t
                                 t-call="l10n_ec_account_edi.electronic_report_common_total_info"
                             />

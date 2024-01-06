@@ -1,146 +1,105 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <template id="electronic_report_common_head">
-        <div
-            class="row"
-            style="font-size: 11px; padding-top: 10px; padding-bottom: 10px; padding-right: 0px;"
-        >
-            <t
-                t-set="style_div_company"
-                t-value="'min-height: 230px; padding-left: 20px;'"
-            />
-            <t t-set="company_logo" t-value="company.logo" />
+        <div class="row" style="font-size: 11px; padding-top: 0px; padding-bottom: 0px; padding-right: 0px;">
+            <t t-set="style_div_company" t-value="'min-height: 173px; padding-left: 10px;'"/>
+            <t t-set="company_logo" t-value="company.logo"/>
             <table class="table table-no-border">
                 <tr>
                     <td width="50%">
                         <t t-if="company_logo">
-                            <div class="oe_product_image">
-                                <img
-                                    t-att-src="image_data_uri(company_logo)"
-                                    height="150"
-                                    width="100%"
-                                />
+                            <div class="oe_product_image text-center">
+                                <img t-att-src="image_data_uri(company_logo)" height="130"/>
                             </div>
-                            <br />
+                            <br/>
                         </t>
-                        <div
-                            class="div-bordered div-radius"
-                            t-att-style="style_div_company"
-                        >
+                        <div class="div-bordered div-radius" t-att-style="style_div_company">
                             <div class="text-center text-uppercase">
-                                <strong t-field="company.name" />
+                                <strong t-field="company.name"/>
                             </div>
-                            <div
-                                class="text-center"
-                                t-if="company.partner_id.city and company.partner_id.country_id"
-                            >
-                                <span t-out="company.partner_id.city.capitalize()" />
+                            <div class="text-center" t-if="company.partner_id.city and company.partner_id.country_id">
+                                <span t-out="company.partner_id.city.capitalize()"/>
                                 -
-                                <span
-                                    t-out="company.partner_id.country_id.name.capitalize()"
-                                />
+                                <span t-out="company.partner_id.country_id.name.capitalize()"/>
                             </div>
-                            <br />
+                            <br/>
                             <strong>Dir. Matriz:</strong>
-                            <span t-field="company.partner_id.street" />
+                            <span t-field="company.partner_id.street"/>
                             <t t-if="company.partner_id.phone">
-                                <br />
+                                <br/>
                                 <strong>Telf.:</strong>
-                                <span t-field="company.partner_id.phone" />
+                                <span t-field="company.partner_id.phone"/>
                             </t>
                             <t t-if="company.partner_id.email">
-                                <br />
+                                <br/>
                                 <strong>Email:</strong>
-                                <span t-field="company.partner_id.email" />
+                                <span t-field="company.partner_id.email"/>
                             </t>
-                            <t
-                                t-if="company.partner_id.street != emission_address.street"
-                            >
-                                <br />
+                            <t t-if="company.partner_id.street != emission_address.street">
+                                <br/>
                                 <strong>Dir. Sucursal:</strong>
-                                <span t-out="emission_address.street" />
+                                <span t-out="emission_address.street"/>
                                 <t t-if="emission_address.phone">
-                                    <br />
+                                    <br/>
                                     <strong>Telf. Sucursal:</strong>
-                                    <span t-field="emission_address.phone" />
+                                    <span t-field="emission_address.phone"/>
                                 </t>
                                 <t t-if="emission_address.email">
-                                    <br />
+                                    <br/>
                                     <strong>Email Sucursal:</strong>
-                                    <span t-field="emission_address.email" />
+                                    <span t-field="emission_address.email"/>
                                 </t>
                             </t>
-                            <t
-                                t-set="contribuyente_especial"
-                                t-value="company.l10n_ec_get_resolution_data(document_date)"
-                            />
+                            <t t-set="contribuyente_especial" t-value="company.l10n_ec_get_resolution_data(document_date)"/>
                             <t t-if="contribuyente_especial">
-                                <br />
+                                <br/>
                                 <strong>Contribuyente especial Nro:</strong>
-                                <span t-out="contribuyente_especial" />
+                                <span t-out="contribuyente_especial"/>
                             </t>
-                            <br />
+                            <br/>
                             <t>
                                 <strong>Obligado a llevar contabilidad:</strong>
-                                <span
-                                    t-out="o.env['account.edi.document']._l10n_ec_get_required_accounting(company.partner_id.property_account_position_id)"
-                                />
+                                <span t-out="o.env['account.edi.document']._l10n_ec_get_required_accounting(company.partner_id.property_account_position_id)"/>
                             </t>
                             <t t-if="company.l10n_ec_retention_agent">
-                                <br />
+                                <br/>
                                 <strong>Agente Retención Resolución No</strong>
-                                <span t-out="company.l10n_ec_retention_agent" />
+                                <span t-out="company.l10n_ec_retention_agent"/>
                             </t>
                             <t t-if="company.l10n_ec_get_regimen()">
-                                <br />
-                                <span t-out="company.l10n_ec_get_regimen()" />
+                                <br/>
+                                <span t-out="company.l10n_ec_get_regimen()"/>
                             </t>
                         </div>
                     </td>
                     <td>
-                        <div class="div-bordered div-radius" style="min-height: 325px;">
-                            <strong>R.U.C.:</strong>
-                            <strong t-field="company.partner_id.vat" />
-                            <br />
-                            <br />
-                            <strong t-out="document_string" />
-                            <br />
-                            Nº.
-                            <span t-out="document_number" />
-                            <br />
-                            <br />
-                            <strong>NÚMERO DE AUTORIZACION</strong>
-                            <br />
-                            <span t-field="edi_doc.l10n_ec_xml_access_key" />
-                            <br />
-                            <br />
-                            <strong>Fecha y hora de autorización:</strong>
-                            <span t-field="edi_doc.l10n_ec_authorization_date" />
-                            <br />
-                            <br />
-                            <strong>AMBIENTE:</strong>
-                            <span t-field="company.l10n_ec_type_environment" />
-                            <br />
-                            <br />
-                            <strong>EMISION:</strong>
-                            <span t-out="'Normal'" />
-                            <br />
-                            <br />
-                            <strong>CLAVE DE ACCESO:</strong>
-                            <br />
-                            <div
-                                class="oe_product_image text-center"
-                                t-if="edi_doc.l10n_ec_xml_access_key"
-                            >
-                                <img
-                                    class="barcode"
-                                    t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;' % ('Code128', edi_doc.l10n_ec_xml_access_key, 400, 100)"
-                                    alt="Clave de Acceso"
-                                />
-                                <br />
-                                <span t-field="edi_doc.l10n_ec_xml_access_key" />
+                        <div class="div-bordered div-radius" style="line-height: 250%;font-size:11px">
+                            <div style="font-size:15px">
+                                <strong>R.U.C.:</strong>
+                                <strong t-field="company.partner_id.vat"/>
+                                <br/>
+                                <strong t-out="document_string"/>: <span t-out="document_number"/>
                             </div>
-                            <br />
+                            <strong>Número de Autorización:</strong>
+                            <br/>
+                            <span t-field="edi_doc.l10n_ec_xml_access_key"/>
+                            <br/>
+                            <strong>Fecha y hora de autorización:</strong>
+                            <span t-field="edi_doc.l10n_ec_authorization_date"/>
+                            <br/>
+                            <strong>AMBIENTE:</strong>
+                            <span t-field="company.l10n_ec_type_environment"/>
+                            <br/>
+                            <strong>EMISION:</strong>
+                            <span t-out="'Normal'"/>
+                            <br/>
+                            <strong>CLAVE DE ACCESO:</strong>
+                            <br/>
+                            <div class="oe_product_image text-center" t-if="edi_doc.l10n_ec_xml_access_key">
+                                <img class="barcode" t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s&amp;' % ('Code128', edi_doc.l10n_ec_xml_access_key, 400, 50)" alt="Clave de Acceso"/>
+                                <br/>
+                                <span t-field="edi_doc.l10n_ec_xml_access_key"/>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -148,7 +107,7 @@
         </div>
     </template>
     <template id="electronic_report_common_info_aditional">
-        <div class="div-bordered small">
+        <div class="div-bordered small" style="font-size:11px;">
             <strong>Información Adicional</strong>
             <br />
             <t t-if="comment">
@@ -198,7 +157,7 @@
         </div>
     </template>
     <template id="electronic_report_common_payment_info">
-        <table class="table table-sm table-bordered-black small">
+        <table class="table table-sm table-bordered-black small" style="font-size:11px">
             <thead>
                 <tr>
                     <th
@@ -223,7 +182,7 @@
                     <td>
                         <span t-out="payment_line['name']" />
                     </td>
-                    <td class="text-right amount-xl">
+                    <td style="text-align: right" class="amount-xl">
                         <span t-out="payment_line['total']" />
                     </td>
                     <td>
@@ -234,7 +193,7 @@
         </table>
     </template>
     <template id="electronic_report_common_total_info">
-        <table class="table table-sm table-bordered-black small">
+        <table class="table table-sm table-bordered-black small" style="font-size:12px">
             <t t-set="tax_totals" t-value="o.tax_totals" />
             <t t-call="account.document_tax_totals" />
         </table>
