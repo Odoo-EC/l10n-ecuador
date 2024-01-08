@@ -22,7 +22,7 @@ TAX_SUPPORT = [
     ("08", "08 - Valor pagado para solicitar Reembolso de Gasto (intermediario)"),
     ("09", "09 - Reembolso por Siniestros"),
     ("10", "10 - Distribución de Dividendos, Beneficios o Utilidades"),
-    ("11", "11 - Convenios de débito o recaudación para IFI´s"),
+    ("11", "11 - Convenios de débito o recaudación para IFI's"),
     ("12", "12 - Impuestos y retenciones presuntivos"),
     (
         "13",

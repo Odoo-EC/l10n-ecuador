@@ -60,22 +60,22 @@
                         <td>
                             <span t-out="o.date.strftime('%m/%Y')" />
                         </td>
-                        <td class="text-right">
+                        <td style="text-align: right">
                             <span
-                                t-out="line.tax_base_amount"
+                                t-out="line.base_amount"
                                 t-options='{"widget": "monetary", "display_currency": res_company.currency_id}'
                             />
                         </td>
-                        <td class="text-right">
+                        <td style="text-align: right">
                             <span
-                                t-field="line.tax_line_id.tax_group_id.l10n_ec_type"
+                                t-field="line.tax_withhold_id.tax_group_id.l10n_ec_type"
                             />
                         </td>
-                        <td class="text-right">
-                            <span t-out="abs(line.tax_line_id.amount)" />%
+                        <td style="text-align: right">
+                            <span t-out="abs(line.tax_withhold_id.amount)" />%
                         </td>
-                        <td class="text-right">
-                            <span t-out="abs(line.balance)" />
+                        <td style="text-align: right">
+                            <span t-out="abs(line.withhold_amount)" />
                         </td>
                     </tr>
                 </t>

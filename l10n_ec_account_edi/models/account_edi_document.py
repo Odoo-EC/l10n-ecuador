@@ -211,7 +211,7 @@ class AccountEdiDocument(models.Model):
                 company,
             )
             self.l10n_ec_xml_access_key = xml_access_key
-            
+
         social_name = self._l10n_ec_clean_str(company.partner_id.name)
         business_name = self._l10n_ec_clean_str(
             company.partner_id.l10n_ec_business_name or social_name

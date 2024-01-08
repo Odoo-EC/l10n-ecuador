@@ -20,10 +20,9 @@ class AccountMove(models.Model):
         string="Withholding Type",
     )
     l10n_ec_withhold_line_ids = fields.One2many(
-        comodel_name="account.move.line",
-        inverse_name="l10n_ec_withhold_id",
+        comodel_name="l10n_ec.withhold.line",
+        inverse_name="withhold_id",
         string="Lineas de retencion",
-        readonly=True,
     )
     l10n_ec_withhold_ids = fields.Many2many(
         "account.move",
@@ -43,7 +42,7 @@ class AccountMove(models.Model):
         store=True,
     )
     l10n_ec_tax_support = fields.Selection(
-        TAX_SUPPORT, string="Tax Support", help="Tax support in invoice line"
+        TAX_SUPPORT, string="Tax Support", help="Tax support in withhold line"
     )
 
     @api.onchange("partner_id")
@@ -116,6 +115,20 @@ class AccountMove(models.Model):
                     )
                 )
 
+    # Sobreescribo para cambiar el nombre que se muestra en la lista de pagos pendientes
+    def _compute_payments_widget_to_reconcile_info(self):
+        super()._compute_payments_widget_to_reconcile_info()
+        for move in self:
+            payments_widget_vals = move.invoice_outstanding_credits_debits_widget
+            if not payments_widget_vals:
+                continue
+
+            for p_l in payments_widget_vals.get("content", []):
+                o = self.browse(p_l["move_id"])
+                p_l["name"] = o.name
+
+            move.invoice_outstanding_credits_debits_widget = payments_widget_vals
+
     def _post(self, soft=True):
         # OVERRIDE
         # Set the electronic document to be posted and post immediately for synchronous formats.
@@ -126,7 +139,7 @@ class AccountMove(models.Model):
             if move.is_purchase_document() and move.l10n_ec_withhold_active:
                 lines_without_tax_support = any(
                     not invoice_line.l10n_ec_tax_support
-                    for invoice_line in move.invoice_line_ids
+                    for invoice_line in move.l10n_ec_withhold_line_ids
                 )
                 if not move.l10n_ec_tax_support and lines_without_tax_support:
                     raise UserError(
@@ -207,46 +220,48 @@ class AccountMove(models.Model):
             )
         return action
 
+    # Devuelve el valor total del IVA en la factura
+    # Busca en el diccionario de 'tax_totals' los valores de los grupos que se llamen 'IVA'
+    def get_tax_iva_total(self):
+        self.ensure_one()
+        tax_totals = dict(self.tax_totals if self.tax_totals else {})
+        groups_by_subtotal = tax_totals.get("groups_by_subtotal", {})
+        iva_total = 0
+        for v in groups_by_subtotal.values():
+            tax_group_list = list(v) or []
+            for tax_group in tax_group_list:
+                if "IVA" in tax_group.get("tax_group_name", "").upper():
+                    iva_total += tax_group.get("tax_group_amount", 0.0)
+        return abs(iva_total)
+
     def _action_create_sale_withhold_wizard(self):
-        action = self.env.ref(
-            "l10n_ec_withhold.l10n_ec_wizard_sale_withhold_action_window"
-        ).read()[0]
-        action["views"] = [
-            (
-                self.env.ref(
-                    "l10n_ec_withhold.l10n_ec_wizard_sale_withhold_form_view"
-                ).id,
-                "form",
-            )
-        ]
-        ctx = safe_eval(action["context"])
-        ctx.pop("default_type", False)
-        ctx.update(self.env.context.copy())
-        action["context"] = ctx
-        return action
+        self.ensure_one()
+        return self._action_create_withhold_wizard("sale")
 
     def _action_create_purchase_withhold_wizard(self):
         self.ensure_one()
+        return self._action_create_withhold_wizard("purchase")
+
+    def _action_create_withhold_wizard(self, tipo):
+        self.ensure_one()
+
         action = self.env.ref(
-            "l10n_ec_withhold.l10n_ec_wizard_purchase_withhold_action_window"
+            "l10n_ec_withhold.l10n_ec_wizard_withhold_action_window"
         ).read()[0]
         action["views"] = [
             (
-                self.env.ref(
-                    "l10n_ec_withhold.l10n_ec_wizard_purchase_withhold_form_view"
-                ).id,
+                self.env.ref("l10n_ec_withhold.l10n_ec_wizard_withhold_form_view").id,
                 "form",
             )
         ]
         ctx = safe_eval(action["context"])
         ctx.pop("default_type", False)
-        ctx.update(
-            {
-                "default_partner_id": self.partner_id.id,
-                "default_invoice_id": self.id,
-                "default_issue_date": self.invoice_date,
-            }
-        )
+        ctx["type"] = tipo
+        ctx["move_id"] = self.id
+        ctx["move_amount_untaxed"] = self.amount_untaxed
+        ctx["move_amount_iva"] = self.get_tax_iva_total()
+        ctx["tax_support"] = self.l10n_ec_tax_support
+        ctx.update(self.env.context.copy())
         action["context"] = ctx
         return action
 
@@ -297,41 +312,292 @@ class AccountMove(models.Model):
         self.ensure_one()
         return self.partner_id.l10n_ec_tax_support
 
+    # Sobreescribir metodo para que las retenciones se abran con su respectivo formulario
+    def action_open_business_doc(self):
+        self.ensure_one()
+        if self.is_withhold():
+            form_id = self.env.ref(
+                "l10n_ec_withhold.view_account_move_withhold_form"
+            ).id
+            res = {
+                "name": _("Withhold"),
+                "type": "ir.actions.act_window",
+                "view_mode": "form",
+                "views": [(form_id, "form")],
+                "res_model": "account.move",
+                "res_id": self.id,
+                "target": "current",
+            }
+            return res
+        else:
+            return super().action_open_business_doc()
 
-class AccountMoveLine(models.Model):
-    _inherit = "account.move.line"
+    @api.model
+    def validations_withhold(self, invoice, vals):
+        if vals["tipo"] == "sale":
+            # Validate len of number authorization
+            if len(vals["authorization"]) not in [10, 49]:
+                raise UserError(
+                    _("Authorization is not valid. Should be length equal to 10 or 49")
+                )
 
-    l10n_ec_withhold_id = fields.Many2one(
+            # Validate or extract withhold number
+            if not vals.get("number"):
+                if len(vals["authorization"]) == 49:
+                    series_number = vals["authorization"][24:39]
+                    vals[
+                        "number"
+                    ] = f"{series_number[0:3]}-{series_number[3:6]}-{series_number[6:15]}"
+                else:
+                    raise UserError(_("Please add a document number before continue"))
+
+            # Validate duplicate retention
+            withhold_count = self.env["account.move"].search_count(
+                [
+                    ("partner_id", "=", invoice.partner_id.id),
+                    ("ref", "=", vals["number"]),
+                    ("l10n_ec_withholding_type", "=", "sale"),
+                    ("l10n_latam_internal_type", "=", "withhold"),
+                ]
+            )
+            if withhold_count > 0:
+                raise UserError(_(f"Withhold {vals['number']} already exist"))
+
+        # Validate date of withhold
+        if vals.get("date") and vals.get("date") < invoice.invoice_date:
+            raise UserError(
+                _(
+                    f"Withhold date: {vals['date']} "
+                    f"should be equal or major that invoice date: {invoice.invoice_date}"
+                )
+            )
+
+        # Validate lines
+        if not vals.get("lines"):
+            raise UserError(_("Please add some withholding lines before continue"))
+
+        # Validate journal
+        if not vals.get("journal_id"):
+            journal = self.env["account.journal"].search(
+                [
+                    ("type", "=", "general"),
+                    ("l10n_ec_withholding_type", "=", vals["tipo"]),
+                ],
+                limit=1,
+            )
+            if journal:
+                vals["journal_id"] = journal.id
+            else:
+                raise UserError(_("Please configure a journal for sale withhold"))
+
+    # Create Withhold
+    @api.model
+    def create_withhold(self, vals, post=True):
+        # get invoice
+        invoice = False
+        invoice_id = vals.get("invoice_id")
+        if not invoice_id:
+            invoice = self.search(
+                [
+                    ("name", "like", "%" + vals["invoice_number"]),
+                    ("move_type", "=", "out_invoice"),
+                ],
+                limit=1,
+            )
+            if not invoice:
+                raise UserError(_(f"Invoice {vals['invoice_number']} not found"))
+            invoice_id = invoice.id
+        if not invoice:
+            invoice = self.browse(invoice_id)
+
+        # Validaciones
+        self.validations_withhold(invoice, vals)
+
+        # Create withhold
+        withhold_vals = {
+            "journal_id": vals["journal_id"],
+            "move_type": "entry",
+            "l10n_latam_document_type_id": self.env.ref("l10n_ec.ec_dt_07").id,
+            "partner_id": invoice.partner_id.id,
+            "l10n_ec_withholding_type": vals["tipo"],
+        }
+        if vals.get("date"):
+            withhold_vals["date"] = vals.get("date")
+
+        withhold = self.create(withhold_vals)
+
+        # Create lines
+        w_lines = []
+        account_lines = []
+        total_withhold = vals["total_withhold"]
+
+        tax_tags_base = []
+
+        for line in vals["lines"]:
+            line["l10n_ec_invoice_withhold_id"] = invoice_id
+
+            w_lines.append((0, 0, line))
+
+            # Linea contable de la retencion.
+            ret_tax = self.env["account.tax"].browse(line["tax_withhold_id"])
+            tax_tags_base += ret_tax.invoice_repartition_line_ids.filtered(
+                lambda x: x.repartition_type == "base"
+            ).tag_ids.ids
+            repartition_lines = ret_tax.invoice_repartition_line_ids.filtered(
+                lambda x: x.repartition_type == "tax"
+            )
+            for repartition_line in repartition_lines:
+                account_id = repartition_line.account_id.id
+                amount = line["withhold_amount"] * repartition_line.factor
+                debit = 0
+                credit = 0
+                if vals["tipo"] == "sale":
+                    debit = amount
+                else:
+                    credit = amount
+
+                account_lines.append(
+                    (
+                        0,
+                        0,
+                        {
+                            "partner_id": invoice.partner_id.id,
+                            "account_id": account_id,
+                            "name": "RET " + str(vals["number"]),
+                            "debit": debit,
+                            "credit": credit,
+                            "tax_tag_ids": [(6, 0, repartition_line.tag_ids.ids)],
+                        },
+                    )
+                )
+
+        # Linea contable de la base
+        if vals["tipo"] == "sale":
+            # Linea contable de la retencion. Quito de las cuentas por cobrar
+            account_id = invoice.partner_id.property_account_receivable_id.id
+        else:
+            # Linea contable de la retencion. Quito de las cuentas por pagar
+            account_id = invoice.partner_id.property_account_payable_id.id
+
+        # Validar que la cuenta exista en los movimientos de la factura
+        account_exist = invoice.line_ids.filtered(
+            lambda x: x.account_id.id == account_id
+        )
+        if not account_exist:
+            raise UserError(
+                _("Account '%s' not found in invoice lines")
+                % (invoice.partner_id.property_account_receivable_id.name)
+            )
+
+        if vals["tipo"] == "sale":
+            vals["number"] = invoice.name
+            credit = total_withhold
+            debit = 0
+        else:
+            credit = 0
+            debit = total_withhold
+
+        account_lines.append(
+            (
+                0,
+                0,
+                {
+                    "partner_id": invoice.partner_id.id,
+                    "account_id": account_id,
+                    "name": "RET " + str(vals["number"]),
+                    "debit": debit,
+                    "credit": credit,
+                    "tax_tag_ids": [(6, 0, tax_tags_base)],
+                },
+            )
+        )
+
+        withhold.write(
+            {
+                "ref": vals.get("number", invoice.name),
+                "l10n_ec_electronic_authorization": vals.get("authorization"),
+                "l10n_ec_withhold_line_ids": w_lines,
+                "line_ids": account_lines,
+            }
+        )
+
+        if post:
+            withhold.action_post()
+            # asignar retencion a la factura
+            invoice.write({"l10n_ec_withhold_ids": [(4, withhold.id)]})
+
+            # Actualizar nombre en lineas
+            if vals["tipo"] == "purchase":
+                withhold.line_ids.write({"name": withhold.name})
+
+            self._try_reconcile_withholding_moves(
+                withhold,
+                invoice,
+                "asset_receivable" if vals["tipo"] == "sale" else "liability_payable",
+            )
+
+        return withhold
+
+    def _try_reconcile_withholding_moves(self, withholding, invoices, account_type):
+        assert account_type in ["asset_receivable", "liability_payable"], _(
+            "Account type not supported, this must be receivable or payable"
+        )
+        aml_to_reconcile = invoices.line_ids.filtered(
+            lambda line: line.account_id.account_type == account_type
+        )
+        aml_to_reconcile += withholding.line_ids.filtered(
+            lambda line: line.account_id.account_type == account_type
+        )
+        aml_to_reconcile.reconcile()
+        return True
+
+
+class WithholdLine(models.Model):
+    _name = "l10n_ec.withhold.line"
+    _description = "Withhold line"
+
+    withhold_id = fields.Many2one(
         comodel_name="account.move",
         string="Withhold",
-        readonly=True,
-        copy=False,
+        ondelete="cascade",
     )
-
+    l10n_ec_invoice_withhold_id = fields.Many2one("account.move", string="Document")
+    tax_group_withhold_id = fields.Many2one(
+        comodel_name="account.tax.group",
+        string="Withholding Type",
+    )
+    tax_withhold_id = fields.Many2one(
+        comodel_name="account.tax",
+        string="Withholding tax",
+    )
+    base_amount = fields.Float(string="Amount Base", readonly=False)
+    withhold_amount = fields.Float(
+        string="Amount Withhold",
+    )
     l10n_ec_tax_support = fields.Selection(
         TAX_SUPPORT,
         string="Tax Support",
         copy=False,
-        help="Tax support in invoice line",
-    )
-    l10n_ec_invoice_withhold_id = fields.Many2one(
-        comodel_name="account.move",
-        string="Invoice",
-        readonly=True,
-        copy=False,
+        default=lambda self: self._context.get("tax_support"),
     )
 
-    @api.onchange("name", "product_id")
-    def _onchange_get_l10n_ec_tax_support(self):
+    @api.onchange("base_amount", "tax_withhold_id")
+    def _onchange_withholding_amount(self):
         for line in self:
-            line.l10n_ec_tax_support = line._get_l10n_ec_tax_support()
+            line.withhold_amount = round(
+                abs(line.base_amount * line.tax_withhold_id.amount / 100), 2
+            )
 
-    def _get_l10n_ec_tax_support(self):
-        self.ensure_one()
-        if (
-            not self.l10n_ec_tax_support
-            and self.move_id
-            and self.move_id.l10n_ec_tax_support
-        ):
-            return self.move_id.l10n_ec_tax_support
-        return False
+    @api.onchange("tax_group_withhold_id")
+    def _onchange_withholding_base(self):
+        for line in self:
+            if line.tax_group_withhold_id.l10n_ec_type in [
+                "withhold_income_sale",
+                "withhold_income_purchase",
+            ]:
+                line.base_amount = self._context.get("move_amount_untaxed", 0)
+            elif line.tax_group_withhold_id.l10n_ec_type in [
+                "withhold_vat_sale",
+                "withhold_vat_purchase",
+            ]:
+                line.base_amount = self._context.get("move_amount_iva", 0)

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="l10n_ec_wizard_withhold_form_view" model="ir.ui.view">
+        <field name="name">Create Withhold Wizard</field>
+        <field name="model">l10n_ec.wizard.create.withhold</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <group>
+                        <field
+                            name="issue_date"
+                            required="context.get('type') == 'sale'"
+                            invisible="context.get('type') != 'sale'"
+                        />
+                        <field
+                            name="journal_id"
+                            required="1"
+                            domain="[('type', '=', 'general'), ('l10n_ec_withholding_type', '=', context.get('type'))]"
+                            options="{'no_create': True}"
+                        />
+                        <field
+                            name="document_number"
+                            required="context.get('type') == 'sale'"
+                            invisible="context.get('type') != 'sale'"
+                        />
+                        <field
+                            name="electronic_authorization"
+                            required="context.get('type') == 'sale'"
+                            invisible="context.get('type') != 'sale'"
+                        />
+                    </group>
+                </group>
+                <notebook>
+                    <page name="withhold_lines" string="Lines">
+                        <field name="withhold_line_ids" colspan="4">
+                            <tree editable="bottom">
+                                <field
+                                    name="l10n_ec_tax_support"
+                                    column_invisible="context.get('type') != 'purchase'"
+                                    required="context.get('type') == 'purchase'"
+                                />
+                                <field
+                                    name="tax_group_withhold_id"
+                                    required="1"
+                                    options="{'no_create': True}"
+                                    domain="[('l10n_ec_type', 'in', ['withhold_vat_' + context.get('type'), 'withhold_income_' + context.get('type')])]"
+                                />
+                                <field
+                                    name="tax_withhold_id"
+                                    required="1"
+                                    options="{'no_create': True}"
+                                    domain="[('tax_group_id', '=', tax_group_withhold_id), ('type_tax_use', '=', 'none')]"
+                                />
+                                <field name="base_amount" force_save="1" />
+                                <field name="withhold_amount" />
+                            </tree>
+                        </field>
+                        <group class="oe_subtotal_footer oe_right">
+                            <field
+                                name="withhold_totals"
+                                class="oe_subtotal_footer_separator"
+                                style="font-size: 21px;"
+                            />
+                        </group>
+                    </page>
+                </notebook>
+                <footer>
+                    <button
+                        name="button_validate"
+                        string="Create Withhold"
+                        type="object"
+                        class="btn-primary"
+                    />
+                    <button string="Cancel" special="cancel" class="btn-secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+
+    <record id="l10n_ec_wizard_withhold_action_window" model="ir.actions.act_window">
+        <field name="name">Withholding</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">l10n_ec.wizard.create.withhold</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="l10n_ec_wizard_withhold_form_view" />
+    </record>
+</odoo>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+    <t
+        t-name="l10n_ec_withhold.AccountPaymentField"
+        t-inherit="account.AccountPaymentField"
+        t-inherit-mode="extension"
+        owl="1"
+    >
+        <!-- Sobreescribo para que los pagos muestren las iniciales de que tipo de pago es: Eje. Retencion, NC, o pago normal -->
+        <xpath
+            expr="//i[hasclass('o_field_widget','text-start','o_payment_label')]"
+            position="replace"
+        >
+            <i class="o_field_widget text-start o_payment_label"><t
+                    t-out="line.date"
+                /> - <t t-out="line.ref.split('/')[0].split(' ')[0]" /> </i>
+        </xpath>
+
+        <!-- Sobreescribo para que los pagos pendientes de vinculación muestren el nombre del documento, y también cambio el tamaño de letra -->
+        <xpath
+            expr="//a[hasclass('oe_form_field','btn','btn-link','open_account_move')]"
+            position="replace"
+        >
+            <a
+                t-att-title="line.date"
+                role="button"
+                class="oe_form_field btn btn-link open_account_move"
+                t-on-click="() => this.openMove(line.move_id)"
+                style="font-size: 12px; margin-right: 5px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; padding-left: 0px; width:100%; text-align:left;"
+                data-bs-toggle="tooltip"
+                t-att-payment-id="account_payment_id"
+                t-out="line.name"
+            />
+        </xpath>
+    </t>
+</templates>

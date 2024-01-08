@@ -27,10 +27,13 @@ class AccountEdiDocument(models.Model):
 
     def _l10n_ec_get_edi_number(self):
         edi_number = super()._l10n_ec_get_edi_number()
-        # withholding save number in field 'ref'
+        # withholding save number in any l10n_ec_withhold_line_ids
         document = self.l10n_ec_get_current_document()
         if document.is_purchase_withhold():
-            edi_number = document.ref
+            invoices_ref = (
+                document.l10n_ec_withhold_line_ids.l10n_ec_invoice_withhold_id
+            )
+            edi_number = invoices_ref.l10n_latam_document_number
         return edi_number
 
     def _l10n_ec_get_info_withhold(self):
@@ -74,8 +77,7 @@ class AccountEdiDocument(models.Model):
     def _l10n_ec_get_withhold_taxes_vals(self, withhold_lines):
         withhold_tax_vals = []
         for withhold_line in withhold_lines:
-            tax = withhold_line.tax_line_id
-            rate = tax.amount
+            tax = withhold_line.tax_withhold_id
             tax_code = tax.l10n_ec_xml_fe_code
             # profit withhold take from l10n_ec_code_base
             if tax.tax_group_id.l10n_ec_type == "withhold_income_purchase":
@@ -84,40 +86,57 @@ class AccountEdiDocument(models.Model):
                 "codigo": tax.tax_group_id.l10n_ec_xml_fe_code,
                 "codigoPorcentaje": tax_code,
                 "baseImponible": self._l10n_ec_number_format(
-                    abs(withhold_line.tax_base_amount), 6
+                    abs(withhold_line.base_amount), 6
                 ),
-                "tarifa": self._l10n_ec_number_format(abs(rate), 6),
-                "valor": self._l10n_ec_number_format(abs(withhold_line.price_unit), 6),
+                "tarifa": self._l10n_ec_number_format(abs(tax.amount), 6),
+                "valor": self._l10n_ec_number_format(
+                    abs(withhold_line.withhold_amount), 6
+                ),
             }
             withhold_tax_vals.append(tax_vals)
         return withhold_tax_vals
 
     def _l10n_ec_get_support_data(self):
         def filter_support_invoice_lines(invoice_line):
-            invoice_line_tax_support = (
-                invoice_line.l10n_ec_tax_support
-                or invoice_line.move_id.l10n_ec_tax_support
-            )
+            # linea anterior
+            # Ahora el invoice_line no teine el campo l10n_ec_tax_support
+            # invoice_line_tax_support = (invoice_line.l10n_ec_tax_support or invoice_line.move_id.l10n_ec_tax_support)
+            invoice_line_tax_support = invoice_line.move_id.l10n_ec_tax_support
             return tax_support == invoice_line_tax_support
 
         docs_sustento = []
         withhold = self.move_id
         # agrupar los documentos por sustento tributario y factura
         invoice_line_data = {}
+        invoice_taxes_data = {
+            "tax_details": {},
+        }
+
         for withhold_line in withhold.l10n_ec_withhold_line_ids:
             invoice = withhold_line.l10n_ec_invoice_withhold_id
             line_key = (invoice, withhold_line.l10n_ec_tax_support)
             invoice_line_data.setdefault(line_key, []).append(withhold_line)
+
+            tax = withhold_line.tax_withhold_id
+            invoice_taxes_data["tax_details"][tax.name] = {
+                "tax": tax,
+                "base_amount_currency": withhold_line.base_amount,
+                "tax_amount_currency": withhold_line.withhold_amount,
+            }
+
         for line_key in invoice_line_data:
             invoice, tax_support = line_key
             withhold_lines = invoice_line_data[line_key]
+
             invoice_taxes_data = invoice._prepare_edi_tax_details(
                 filter_invl_to_apply=filter_support_invoice_lines,
             )
+
             amount_total = abs(
                 invoice_taxes_data.get("base_amount")
                 + invoice_taxes_data.get("tax_amount")
             )
+
             support_data = {
                 "codSustento": tax_support,  # TODO credito fiscal
                 "codDocSustento": invoice.l10n_latam_document_type_id.code or "01",

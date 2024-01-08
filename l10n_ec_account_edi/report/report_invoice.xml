@@ -88,10 +88,11 @@
                             <t
                                 t-call="l10n_ec_account_edi.electronic_report_common_info_aditional"
                             />
-                            
+
                             <div style="height: 10px;" />
 
-                            <t style="padding-top: 100px;"
+                            <t
+                                style="padding-top: 100px;"
                                 t-if="o.move_type in ('out_invoice', 'in_invoice')"
                                 t-call="l10n_ec_account_edi.electronic_report_common_payment_info"
                             />

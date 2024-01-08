@@ -11,8 +11,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/edi_withhold.xml",
-        "wizard/wizard_create_sale_withhold_view.xml",
-        "wizard/wizard_create_purchase_withhold_view.xml",
+        "wizard/wizard_create_withhold_view.xml",
         "views/res_partner_view.xml",
         "views/account_journal_view.xml",
         "views/account_move_view.xml",
@@ -24,4 +23,9 @@
     "installable": True,
     "auto_install": False,
     "post_init_hook": "_10n_ec_withhold_post_init",
+    "assets": {
+        "web.assets_backend": [
+            "l10n_ec_withhold/static/src/components/**/*",
+        ],
+    },
 }

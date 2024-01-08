@@ -423,24 +423,27 @@ class AccountMove(models.Model):
                 company.l10n_ec_type_environment, "authorization"
             )
 
-            response = receipt.edi_document_ids._l10n_ec_edi_send_xml_auth(
-                authorization_client
-            )
+            if company.l10n_ec_type_environment != "none":
+                response = receipt.edi_document_ids._l10n_ec_edi_send_xml_auth(
+                    authorization_client
+                )
 
-            if response is False:
-                raise ValidationError(
-                    _(
-                        "The connection to the SRI service is not possible. Please check later."
+                if response is False:
+                    raise ValidationError(
+                        _(
+                            "The connection to the SRI service is not possible. Please check later."
+                        )
                     )
+
+                is_authorized = (
+                    receipt.edi_document_ids._l10n_ec_edi_process_response_auth(
+                        response
+                    )[0]
                 )
 
-            is_authorized = receipt.edi_document_ids._l10n_ec_edi_process_response_auth(
-                response
-            )[0]
-
-            if is_authorized:
-                raise ValidationError(
-                    _("The receipt is authorized. It cannot be cancelled.")
-                )
+                if is_authorized:
+                    raise ValidationError(
+                        _("The receipt is authorized. It cannot be cancelled.")
+                    )
 
         return super().button_cancel_posted_moves()
