@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>    
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
     <menuitem
         id="l10n_ec.sri_menu"
         name="Ecuadorian SRI"
         parent="account.menu_finance"
-        sequence="9"/>
+        sequence="9"
+    />
 
 </odoo>
