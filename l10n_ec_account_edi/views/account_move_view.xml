@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
+    <!-- Mensaje de alerta para la caducidad de la firma electronica -->
+    <template
+        id="alerta_account_move_in"
+        name="l10n_ec_account_edi.alerta.account.move.in"
+    >
+        <div class="o_onboarding_container collapse show">
+            <div
+                t-att-class="'o_onboarding'"
+                t-att-style="'height:100px;padding: 10px 30px 30px 30px;background-image:url(/l10n_ec_account_edi/static/src/img/alert_expire_signature.jpg)'"
+            >
+                <div class="o_onboarding_wrap">
+                    <div class="o_onboarding_steps">
+                        <t t-raw="contenido" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 
     <!-- Editar el formulario de account_edi -->
     <record id="account_edi_view_move_form" model="ir.ui.view">
