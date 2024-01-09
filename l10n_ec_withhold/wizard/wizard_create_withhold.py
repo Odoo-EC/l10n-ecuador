@@ -18,6 +18,7 @@ class WizardCreateWithhold(models.TransientModel):
         comodel_name="account.journal",
         string="Journal",
         default=lambda self: self._get_default_journal(),
+        check_company=True,
     )
     document_number = fields.Char(
         required=False,
@@ -37,13 +38,14 @@ class WizardCreateWithhold(models.TransientModel):
     withhold_totals = fields.Float(compute="_compute_total_withhold", store=True)
 
     def _get_default_journal(self):
-        return self.env["account.journal"].search(
+        journal = self.env["account.journal"].search(
             [
                 ("type", "=", "general"),
                 ("l10n_ec_withholding_type", "=", self._context.get("type")),
             ],
             limit=1,
         )
+        return journal
 
     @api.depends("withhold_line_ids.withhold_amount")
     def _compute_total_withhold(self):
@@ -56,7 +58,11 @@ class WizardCreateWithhold(models.TransientModel):
     def onchange_authorization(self):
         self.ensure_one()
         if self.electronic_authorization:
-            if len(self.electronic_authorization) == 49:
+            len_auth = len(self.electronic_authorization)
+            if len_auth not in (10, 49):
+                raise UserError(_("Authorization number is not valid"))
+
+            if len_auth == 49:
                 if self.electronic_authorization[8:10] == "07":
                     self.issue_date = self.extract_date_from_authorization()
                     self.document_number = (
@@ -96,6 +102,21 @@ class WizardCreateWithhold(models.TransientModel):
     def extract_document_number_from_authorization(self):
         series_number = self.electronic_authorization[24:39]
         return f"{series_number[0:3]}-{series_number[3:6]}-{series_number[6:15]}"
+
+    @api.model
+    def default_get(self, fields):
+        if not isinstance(self._context.get("move_id"), int):
+            raise UserError(_("Please select only one invoice"))
+
+        # Validate if invoice is paid
+        move_id = self._context.get("move_id")
+        invoice = self.env["account.move"].browse(move_id)
+        if invoice and invoice.payment_state == "paid":
+            raise UserError(
+                _("The invoice is paid, you cn't create a withhold for this invoice")
+            )
+
+        return super().default_get(fields)
 
     def button_validate(self):
         """

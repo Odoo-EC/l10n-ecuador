@@ -137,10 +137,15 @@ class AccountMove(models.Model):
         for move in posted:
             # check if tax support is set into any invoice line or invoice
             if move.is_purchase_document() and move.l10n_ec_withhold_active:
-                lines_without_tax_support = any(
-                    not invoice_line.l10n_ec_tax_support
-                    for invoice_line in move.l10n_ec_withhold_line_ids
+                lines_without_tax_support = (
+                    any(
+                        not invoice_line.l10n_ec_tax_support
+                        for invoice_line in move.l10n_ec_withhold_line_ids
+                    )
+                    if move.l10n_ec_withhold_line_ids
+                    else True
                 )
+
                 if not move.l10n_ec_tax_support and lines_without_tax_support:
                     raise UserError(
                         _(
@@ -358,10 +363,29 @@ class AccountMove(models.Model):
                     ("ref", "=", vals["number"]),
                     ("l10n_ec_withholding_type", "=", "sale"),
                     ("l10n_latam_internal_type", "=", "withhold"),
+                    ("state", "=", "posted"),
                 ]
             )
             if withhold_count > 0:
                 raise UserError(_(f"Withhold {vals['number']} already exist"))
+
+            # Validate duplicate invoice
+            result = self.env["l10n_ec.withhold.line"].search(
+                [
+                    ("l10n_ec_invoice_withhold_id", "=", invoice.id),
+                    ("withhold_id.l10n_ec_withholding_type", "=", "sale"),
+                    ("withhold_id.l10n_latam_internal_type", "=", "withhold"),
+                    ("withhold_id.state", "=", "posted"),
+                ],
+                limit=1,
+            )
+            if result:
+                raise UserError(
+                    _(
+                        f"Invoice {invoice.name} already exist in withhold "
+                        f"{result.withhold_id.name}"
+                    )
+                )
 
         # Validate date of withhold
         if vals.get("date") and vals.get("date") < invoice.invoice_date:
@@ -412,19 +436,6 @@ class AccountMove(models.Model):
 
         # Validaciones
         self.validations_withhold(invoice, vals)
-
-        # Create withhold
-        withhold_vals = {
-            "journal_id": vals["journal_id"],
-            "move_type": "entry",
-            "l10n_latam_document_type_id": self.env.ref("l10n_ec.ec_dt_07").id,
-            "partner_id": invoice.partner_id.id,
-            "l10n_ec_withholding_type": vals["tipo"],
-        }
-        if vals.get("date"):
-            withhold_vals["date"] = vals.get("date")
-
-        withhold = self.create(withhold_vals)
 
         # Create lines
         w_lines = []
@@ -490,11 +501,10 @@ class AccountMove(models.Model):
             )
 
         if vals["tipo"] == "sale":
-            vals["number"] = invoice.name
             credit = total_withhold
-            debit = 0
+            debit = 0.0
         else:
-            credit = 0
+            credit = 0.0
             debit = total_withhold
 
         account_lines.append(
@@ -512,14 +522,22 @@ class AccountMove(models.Model):
             )
         )
 
-        withhold.write(
-            {
-                "ref": vals.get("number", invoice.name),
-                "l10n_ec_electronic_authorization": vals.get("authorization"),
-                "l10n_ec_withhold_line_ids": w_lines,
-                "line_ids": account_lines,
-            }
-        )
+        # Create withhold
+        withhold_vals = {
+            "journal_id": vals["journal_id"],
+            "move_type": "entry",
+            "l10n_latam_document_type_id": self.env.ref("l10n_ec.ec_dt_07").id,
+            "partner_id": invoice.partner_id.id,
+            "l10n_ec_withholding_type": vals["tipo"],
+            "ref": vals.get("number", invoice.name),
+            "l10n_ec_electronic_authorization": vals.get("authorization"),
+            "l10n_ec_withhold_line_ids": w_lines,
+            "line_ids": account_lines,
+        }
+        if vals.get("date"):
+            withhold_vals["date"] = vals.get("date")
+
+        withhold = self.create(withhold_vals)
 
         if post:
             withhold.action_post()
@@ -548,7 +566,8 @@ class AccountMove(models.Model):
         aml_to_reconcile += withholding.line_ids.filtered(
             lambda line: line.account_id.account_type == account_type
         )
-        aml_to_reconcile.reconcile()
+        if not any(aml_to_reconcile.mapped("reconciled")):
+            aml_to_reconcile.reconcile()
         return True
 
 
