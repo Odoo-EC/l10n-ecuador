@@ -1,24 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-
     <menuitem
-        id="sri_withhold_root"
+        id="sri_withhold_purchase"
         groups="account.group_account_manager"
-        name="Withholding"
-        sequence="10"
-        parent="l10n_ec.sri_menu"
-    >
-        <menuitem
-            id="sri_withhold_purchase"
-            groups="account.group_account_manager"
-            name="Purchase Withholding"
-            action="action_account_move_purchase_withhold"
-        />
-        <menuitem
-            id="sri_withhold_sales"
-            groups="account.group_account_manager"
-            name="Sales Withholding"
-            action="action_account_move_sale_withhold"
-        />
-    </menuitem>
+        name="Purchase Withholding"
+        parent="account.menu_finance_payables"
+        action="action_account_move_purchase_withhold"
+        sequence="3"
+    />
+    <menuitem
+        id="sri_withhold_sales"
+        groups="account.group_account_manager"
+        name="Sales Withholding"
+        parent="account.menu_finance_receivables"
+        action="action_account_move_sale_withhold"
+        sequence="3"
+    />
 </odoo>

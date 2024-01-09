@@ -13,6 +13,7 @@
         "data/res_partner_data.xml",
         "data/res.bank.csv",
         "wizard/account_payment_register_views.xml",
+        "views/menu.xml",
         "views/account_tax_view.xml",
         "views/account_journal_view.xml",
         "views/account_payment_view.xml",
