@@ -17,11 +17,14 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
         chart_template_ref="ec",
     ):
         super().setUpClass(chart_template_ref=chart_template_ref)
-        cls.WizardWithhold = cls.env["l10n_ec.wizard.create.sale.withhold"]
+        cls.WizardWithhold = cls.env["l10n_ec.wizard.create.withhold"]
         cls.position_no_withhold = cls.env["account.fiscal.position"].create(
             {"name": "Withhold", "l10n_ec_avoid_withhold": True}
         )
         cls.chart_template = cls.env["account.chart.template"].with_company(cls.company)
+        cls.journal_sale_withhold = cls.chart_template.ref("sale_withhold_ec")
+        cls.journal_sale_withhold.l10n_ec_emission_address_id = cls.partner_contact.id
+
         cls.tax_sale_withhold_vat_100 = cls.chart_template.ref(
             "tax_sale_withhold_vat_100"
         )
@@ -51,14 +54,22 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
     ):
         def add_line(tax):
             with wizard.withhold_line_ids.new() as line:
-                line.invoice_id = invoice
                 line.tax_group_withhold_id = tax.tax_group_id
                 line.tax_withhold_id = tax
 
-        wizard = Form(self.WizardWithhold.with_context(active_ids=invoices.ids))
         invoice = invoices[0]
+
+        wizard = Form(
+            self.WizardWithhold.with_context(
+                type="sale",
+                move_id=invoice.id,
+                move_amount_untaxed=invoice.amount_untaxed,
+                move_amount_iva=invoice.get_tax_iva_total(),
+                tax_support=invoice.l10n_ec_tax_support,
+            )
+        )
+        wizard.journal_id = self.journal_sale_withhold
         wizard.issue_date = invoice.invoice_date
-        wizard.journal_id = invoice.journal_id
         wizard.electronic_authorization = electronic_authorization
         wizard.document_number = new_document_number
         if tax_withhold_vat:
@@ -80,12 +91,11 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
             tax_withhold_vat=self.tax_sale_withhold_vat_100,
             tax_withhold_profit=self.tax_sale_withhold_profit_303,
         )
-        self.assertEqual(wizard.partner_id, partner)
         self.assertEqual(wizard.document_number, "001-001-000000001")
         wizard.save().button_validate()
         sale_withhold = self.env["account.move"].search(
             [
-                ("partner_id", "=", wizard.partner_id.id),
+                ("partner_id", "=", invoice.partner_id.id),
                 ("ref", "=", wizard.document_number),
                 ("l10n_ec_withholding_type", "=", "sale"),
                 ("l10n_latam_internal_type", "=", "withhold"),
@@ -152,40 +162,6 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
         with self.assertRaises(UserError):
             wizard.save().button_validate()
 
-    def test_l10n_ec_different_invoices_fail_withhold(self):
-        """
-        Fail when select two invoice of different customers
-        """
-        partner1 = self.partner_with_email
-        partner2 = self.partner_ruc
-        invoice1 = self.get_invoice(partner1)
-        invoice2 = self.get_invoice(partner2)
-        invoices = invoice1 + invoice2
-        with self.assertRaises(UserError):
-            Form(self.WizardWithhold.with_context(active_ids=invoices.ids))
-
-    def test_l10n_ec_two_invoices_fail_withhold(self):
-        """
-        Fail when withhold not content selected invoices
-        """
-        partner1 = self.partner_with_email
-        partner2 = self.partner_with_email
-        invoice1 = self.get_invoice(partner1)
-        invoice2 = self.get_invoice(partner2)
-        invoices = invoice1 + invoice2
-        wizard = self._prepare_new_wizard_withhold(
-            invoices,
-            "1-1-1",
-            "1111111111",
-            tax_withhold_vat=self.tax_sale_withhold_vat_100,
-        )
-        with wizard.withhold_line_ids.new() as line:
-            line.invoice_id = invoice1
-            line.tax_group_withhold_id = self.tax_sale_withhold_vat_100.tax_group_id
-            line.tax_withhold_id = self.tax_sale_withhold_vat_100
-        with self.assertRaises(UserError):
-            wizard.save().button_validate()
-
     def test_l10n_ec_withhold_exist(self):
         """
         Fail when save duplicate withhold with same pather
@@ -244,7 +220,7 @@ class TestL10nSaleWithhold(TestL10nECEdiCommon):
         invoice.write({"payment_state": "paid"})
 
         with self.assertRaises(UserError):
-            Form(self.WizardWithhold.with_context(active_ids=invoice.ids))
+            Form(self.WizardWithhold.with_context(type="sale", move_id=invoice.id))
 
     def test_l10n_ec_fail_when_invoice_no_require_withholding(self):
         self.partner_ruc.property_account_position_id = self.position_no_withhold

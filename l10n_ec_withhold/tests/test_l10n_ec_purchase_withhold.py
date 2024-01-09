@@ -15,7 +15,7 @@ class TestL10nPurchaseWithhold(TestL10nECEdiCommon):
         chart_template_ref="ec",
     ):
         super().setUpClass(chart_template_ref=chart_template_ref)
-        cls.WizardWithhold = cls.env["l10n_ec.wizard.create.purchase.withhold"]
+        cls.WizardWithhold = cls.env["l10n_ec.wizard.create.withhold"]
         cls.position_no_withhold = cls.env["account.fiscal.position"].create(
             {"name": "Withhold", "l10n_ec_avoid_withhold": True}
         )
@@ -41,20 +41,24 @@ class TestL10nPurchaseWithhold(TestL10nECEdiCommon):
     ):
         def add_line(tax, tax_support=None):
             with wizard.withhold_line_ids.new() as line:
-                line.invoice_id = invoice
                 line.tax_group_withhold_id = tax.tax_group_id
                 line.tax_withhold_id = tax
                 if tax_support:
                     line.l10n_ec_tax_support = tax_support
 
+        invoice = invoices[0]
+
         wizard = Form(
             self.WizardWithhold.with_context(
-                active_ids=invoices.ids, default_partner_id=invoices.partner_id.id
+                type="purchase",
+                move_id=invoice.id,
+                move_amount_untaxed=invoice.amount_untaxed,
+                move_amount_iva=invoice.get_tax_iva_total(),
+                tax_support=invoice.l10n_ec_tax_support,
             )
         )
-        invoice = invoices[0]
-        wizard.issue_date = invoice.invoice_date
-        wizard.journal_id = invoice.journal_id
+
+        # wizard.issue_date = invoice.invoice_date
         wizard.journal_id = self.journal_purchase_withhold
         if tax_withhold_vat:
             add_line(tax_withhold_vat, tax_support=tax_support_withhold_vat)
