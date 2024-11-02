@@ -1,4 +1,3 @@
-
 [![Runboat](https://img.shields.io/badge/runboat-Try%20me-875A7B.png)](https://runboat.odoo-community.org/builds?repo=OCA/l10n-ecuador&target_branch=17.0)
 [![Pre-commit Status](https://github.com/OCA/l10n-ecuador/actions/workflows/pre-commit.yml/badge.svg?branch=17.0)](https://github.com/OCA/l10n-ecuador/actions/workflows/pre-commit.yml?query=branch%3A17.0)
 [![Build Status](https://github.com/OCA/l10n-ecuador/actions/workflows/test.yml/badge.svg?branch=17.0)](https://github.com/OCA/l10n-ecuador/actions/workflows/test.yml?query=branch%3A17.0)
@@ -8,6 +7,8 @@
 <!-- /!\ do not modify above this line -->
 
 # l10n-ecuador
+
+# Prueba de git con oca
 
 TODO: add repo description.
 
@@ -33,11 +34,12 @@ addon | version | maintainers | summary
 
 This repository is licensed under [AGPL-3.0](LICENSE).
 
-However, each module can have a totally different license, as long as they adhere to Odoo Community Association (OCA)
-policy. Consult each module's `__manifest__.py` file, which contains a `license` key
-that explains its license.
+However, each module can have a totally different license, as long as they adhere to
+Odoo Community Association (OCA) policy. Consult each module's `__manifest__.py` file,
+which contains a `license` key that explains its license.
 
-----
+---
+
 OCA, or the [Odoo Community Association](http://odoo-community.org/), is a nonprofit
 organization whose mission is to support the collaborative development of Odoo features
 and promote its widespread use.
